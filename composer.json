@@ -1,0 +1,25 @@
+{
+    "name": "wpshiftstudio/wc-performance-analyzer",
+    "description": "A diagnostic and optimization toolkit for WooCommerce stores",
+    "type": "wordpress-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dilip",
+            "email": "dilip@wpshiftstudio.com",
+            "homepage": "https://wpshiftstudio.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "suspended\\WCPerformanceAnalyzer\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

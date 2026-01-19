@@ -1,0 +1,380 @@
+/**
+ * WooCommerce Performance Analyzer - Admin Dashboard Styles
+ *
+ * @package suspended\WCPerformanceAnalyzer
+ */
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+
+.wcpa-wrap {
+    margin: 20px 20px 20px 0;
+}
+
+.wcpa-page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 23px;
+    font-weight: 400;
+    margin: 0 0 20px;
+    padding: 0;
+}
+
+.wcpa-page-title .dashicons {
+    font-size: 30px;
+    width: 30px;
+    height: 30px;
+    color: #7c3aed;
+}
+
+/* ==========================================================================
+   Tab Navigation
+   ========================================================================== */
+
+.wcpa-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #c3c4c7;
+}
+
+.wcpa-tabs a {
+    padding: 10px 16px;
+    text-decoration: none;
+    color: #50575e;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s ease;
+}
+
+.wcpa-tabs a:hover {
+    color: #1d2327;
+    background: #f0f0f1;
+}
+
+.wcpa-tabs a.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+}
+
+/* ==========================================================================
+   Notice Styles
+   ========================================================================== */
+
+.wcpa-notice {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.wcpa-notice-info {
+    background: #f0f6fc;
+    border-left: 4px solid #72aee6;
+}
+
+.wcpa-notice-success {
+    background: #edfaef;
+    border-left: 4px solid #00a32a;
+}
+
+.wcpa-notice-warning {
+    background: #fcf9e8;
+    border-left: 4px solid #dba617;
+}
+
+.wcpa-notice-error {
+    background: #fcf0f1;
+    border-left: 4px solid #d63638;
+}
+
+.wcpa-notice p {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Card Styles
+   ========================================================================== */
+
+.wcpa-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.wcpa-card h2 {
+    margin: 0 0 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Dashboard - Health Score
+   ========================================================================== */
+
+.wcpa-dashboard-wrapper {
+    max-width: 1200px;
+}
+
+.wcpa-health-score-card {
+    text-align: center;
+    padding: 30px;
+}
+
+.wcpa-health-gauge {
+    margin: 20px 0;
+}
+
+.wcpa-score-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0f0f1 0%, #e0e0e0 100%);
+    font-size: 48px;
+    font-weight: 700;
+    color: #50575e;
+}
+
+.wcpa-score-label {
+    color: #646970;
+    margin-bottom: 20px;
+}
+
+/* Health Score Colors */
+.wcpa-score-excellent {
+    background: linear-gradient(135deg, #00a32a 0%, #008a20 100%) !important;
+    color: #fff !important;
+}
+
+.wcpa-score-good {
+    background: linear-gradient(135deg, #dba617 0%, #c59415 100%) !important;
+    color: #fff !important;
+}
+
+.wcpa-score-attention {
+    background: linear-gradient(135deg, #f18500 0%, #d97706 100%) !important;
+    color: #fff !important;
+}
+
+.wcpa-score-critical {
+    background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%) !important;
+    color: #fff !important;
+}
+
+/* ==========================================================================
+   Dashboard - Metrics Grid
+   ========================================================================== */
+
+.wcpa-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.wcpa-metric-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+}
+
+.wcpa-metric-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #1d2327;
+    margin-bottom: 8px;
+}
+
+.wcpa-metric-label {
+    display: block;
+    font-size: 13px;
+    color: #646970;
+}
+
+/* ==========================================================================
+   Cleanup Tools
+   ========================================================================== */
+
+.wcpa-cleanup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.wcpa-cleanup-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.wcpa-cleanup-card h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.wcpa-cleanup-card p {
+    color: #646970;
+    margin: 0 0 15px;
+    font-size: 13px;
+}
+
+.wcpa-cleanup-stats {
+    background: #f6f7f7;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.wcpa-cleanup-stats .wcpa-count {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d2327;
+}
+
+.wcpa-cleanup-stats .wcpa-label {
+    font-size: 12px;
+    color: #646970;
+}
+
+.wcpa-cleanup-card .button {
+    margin-right: 8px;
+}
+
+/* ==========================================================================
+   Query Log
+   ========================================================================== */
+
+.wcpa-query-log-wrapper {
+    max-width: 1400px;
+}
+
+.wcpa-query-log-controls {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wcpa-query-log-controls label {
+    font-weight: 500;
+}
+
+.wcpa-warning {
+    color: #d63638;
+    font-size: 12px;
+}
+
+/* ==========================================================================
+   Optimizations
+   ========================================================================== */
+
+.wcpa-optimization-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.wcpa-optimization-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.wcpa-optimization-card h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.wcpa-optimization-card p {
+    color: #646970;
+    margin: 0 0 15px;
+    font-size: 13px;
+}
+
+.wcpa-optimization-card select {
+    width: 100%;
+}
+
+/* ==========================================================================
+   Settings
+   ========================================================================== */
+
+.wcpa-settings-wrapper {
+    max-width: 800px;
+}
+
+.wcpa-settings-wrapper .form-table th {
+    width: 250px;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.wcpa-run-scan {
+    min-width: 150px;
+}
+
+.button.wcpa-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.button.wcpa-loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: wcpa-spin 0.8s linear infinite;
+}
+
+@keyframes wcpa-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media screen and (max-width: 782px) {
+    .wcpa-tabs {
+        flex-wrap: wrap;
+    }
+
+    .wcpa-tabs a {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .wcpa-metrics-grid,
+    .wcpa-cleanup-grid,
+    .wcpa-optimization-cards {
+        grid-template-columns: 1fr;
+    }
+}

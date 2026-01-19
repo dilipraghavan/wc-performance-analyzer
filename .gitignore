@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE & Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.log
+*.cache
+
+# Local development
+.env
+*.local.php
+
+# WordPress
+wp-config.php
+/wp-content/uploads/
+
+# Composer
+composer.lock
