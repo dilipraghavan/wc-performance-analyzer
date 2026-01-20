@@ -111,106 +111,287 @@ class AdminMenu {
         $display_metrics = $this->scanner->get_display_metrics();
 
         // Get score data.
-        $health_score = $has_scan_data ? ( $last_scan['health_score'] ?? 0 ) : null;
-        $score_label  = $has_scan_data ? ( $last_scan['score_label'] ?? '' ) : '';
-        $score_color  = $has_scan_data ? ( $last_scan['score_color'] ?? 'gray' ) : 'gray';
+        $health_score    = $has_scan_data ? ( $last_scan['health_score'] ?? 0 ) : null;
+        $score_label     = $has_scan_data ? ( $last_scan['score_label'] ?? '' ) : '';
+        $score_color     = $has_scan_data ? ( $last_scan['score_color'] ?? 'gray' ) : 'gray';
+        $breakdown       = $has_scan_data ? ( $last_scan['breakdown'] ?? array() ) : array();
         $recommendations = $has_scan_data ? ( $last_scan['recommendations'] ?? array() ) : array();
+        $metrics         = $has_scan_data ? ( $last_scan['metrics'] ?? array() ) : array();
         ?>
         <div class="wcpa-dashboard-wrapper">
-            <!-- Health Score Card -->
-            <div class="wcpa-card wcpa-health-score-card">
-                <h2><?php esc_html_e( 'Store Health Score', 'wc-performance-analyzer' ); ?></h2>
-                <div class="wcpa-health-gauge">
-                    <span class="wcpa-score-placeholder <?php echo $has_scan_data ? 'wcpa-score-' . esc_attr( $score_color ) : ''; ?>">
-                        <?php echo $has_scan_data ? esc_html( $health_score ) : '--'; ?>
-                    </span>
+            <?php if ( ! $has_scan_data ) : ?>
+                <!-- First Time / No Scan State -->
+                <div class="wcpa-welcome-card">
+                    <div class="wcpa-welcome-icon">
+                        <span class="dashicons dashicons-performance"></span>
+                    </div>
+                    <h2><?php esc_html_e( 'Analyze Your Store\'s Performance', 'wc-performance-analyzer' ); ?></h2>
+                    <p><?php esc_html_e( 'Run a health scan to identify performance bottlenecks, database bloat, and optimization opportunities.', 'wc-performance-analyzer' ); ?></p>
+                    <button type="button" class="button button-primary button-hero wcpa-run-scan">
+                        <span class="dashicons dashicons-search"></span>
+                        <?php esc_html_e( 'Run Health Scan', 'wc-performance-analyzer' ); ?>
+                    </button>
                 </div>
-                <p class="wcpa-score-label">
-                    <?php
-                    if ( $has_scan_data ) {
-                        echo esc_html( $score_label );
-                        if ( $time_since_scan ) {
+            <?php else : ?>
+                <!-- Dashboard Header Row -->
+                <div class="wcpa-dashboard-header">
+                    <div class="wcpa-header-left">
+                        <h2 class="wcpa-dashboard-title"><?php esc_html_e( 'Store Health Overview', 'wc-performance-analyzer' ); ?></h2>
+                        <p class="wcpa-scan-time">
+                            <?php
                             printf(
                                 /* translators: %s: time since last scan */
-                                ' &mdash; ' . esc_html__( 'Scanned %s ago', 'wc-performance-analyzer' ),
+                                esc_html__( 'Last scanned %s ago', 'wc-performance-analyzer' ),
                                 esc_html( $time_since_scan )
                             );
-                        }
-                    } else {
-                        esc_html_e( 'Run a scan to calculate your score', 'wc-performance-analyzer' );
-                    }
-                    ?>
-                </p>
-                <button type="button" class="button button-primary wcpa-run-scan">
-                    <?php echo $has_scan_data ? esc_html__( 'Rescan', 'wc-performance-analyzer' ) : esc_html__( 'Run Health Scan', 'wc-performance-analyzer' ); ?>
-                </button>
-            </div>
-
-            <!-- Metrics Grid -->
-            <div class="wcpa-metrics-grid">
-                <?php foreach ( $display_metrics as $key => $metric ) : ?>
-                    <div class="wcpa-metric-card" data-metric="<?php echo esc_attr( $key ); ?>">
-                        <span class="wcpa-metric-value"><?php echo esc_html( $metric['value'] ); ?></span>
-                        <span class="wcpa-metric-label"><?php echo esc_html( $metric['label'] ); ?></span>
-                        <?php if ( ! empty( $metric['sub'] ) ) : ?>
-                            <span class="wcpa-metric-sub"><?php echo esc_html( $metric['sub'] ); ?></span>
-                        <?php endif; ?>
+                            ?>
+                        </p>
                     </div>
-                <?php endforeach; ?>
-            </div>
-
-            <?php if ( ! empty( $recommendations ) ) : ?>
-                <!-- Recommendations -->
-                <div class="wcpa-card wcpa-recommendations-card">
-                    <h2><?php esc_html_e( 'Recommendations', 'wc-performance-analyzer' ); ?></h2>
-                    <ul class="wcpa-recommendations-list">
-                        <?php foreach ( $recommendations as $rec ) : ?>
-                            <li class="wcpa-recommendation wcpa-recommendation-<?php echo esc_attr( $rec['type'] ); ?>">
-                                <span class="wcpa-rec-icon dashicons dashicons-<?php echo $rec['type'] === 'critical' ? 'warning' : ( $rec['type'] === 'warning' ? 'flag' : 'info' ); ?>"></span>
-                                <div class="wcpa-rec-content">
-                                    <p class="wcpa-rec-message"><?php echo esc_html( $rec['message'] ); ?></p>
-                                    <?php if ( ! empty( $rec['action'] ) ) : ?>
-                                        <p class="wcpa-rec-action"><?php echo esc_html( $rec['action'] ); ?></p>
-                                    <?php endif; ?>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
+                    <div class="wcpa-header-right">
+                        <button type="button" class="button button-primary wcpa-run-scan">
+                            <span class="dashicons dashicons-update"></span>
+                            <?php esc_html_e( 'Rescan', 'wc-performance-analyzer' ); ?>
+                        </button>
+                    </div>
                 </div>
-            <?php endif; ?>
 
-            <?php if ( $has_scan_data ) : ?>
+                <!-- Main Dashboard Grid -->
+                <div class="wcpa-dashboard-grid">
+                    <!-- Left Column: Health Score -->
+                    <div class="wcpa-dashboard-left">
+                        <!-- Health Score Card -->
+                        <div class="wcpa-card wcpa-health-score-card">
+                            <div class="wcpa-score-circle wcpa-score-<?php echo esc_attr( $score_color ); ?>">
+                                <span class="wcpa-score-number"><?php echo esc_html( $health_score ); ?></span>
+                                <span class="wcpa-score-max">/100</span>
+                            </div>
+                            <div class="wcpa-score-info">
+                                <span class="wcpa-score-badge wcpa-badge-<?php echo esc_attr( $score_color ); ?>">
+                                    <?php echo esc_html( $score_label ); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Score Breakdown -->
+                        <div class="wcpa-card wcpa-breakdown-card">
+                            <h3><?php esc_html_e( 'Score Breakdown', 'wc-performance-analyzer' ); ?></h3>
+                            <div class="wcpa-breakdown-list">
+                                <?php
+                                $breakdown_labels = array(
+                                    'autoload'           => __( 'Autoload Size', 'wc-performance-analyzer' ),
+                                    'orphaned_meta'      => __( 'Orphaned Meta', 'wc-performance-analyzer' ),
+                                    'expired_transients' => __( 'Expired Transients', 'wc-performance-analyzer' ),
+                                    'wc_sessions'        => __( 'WC Sessions', 'wc-performance-analyzer' ),
+                                    'meta_per_product'   => __( 'Meta per Product', 'wc-performance-analyzer' ),
+                                    'revisions'          => __( 'Post Revisions', 'wc-performance-analyzer' ),
+                                );
+                                foreach ( $breakdown as $key => $data ) :
+                                    $label  = $breakdown_labels[ $key ] ?? ucfirst( str_replace( '_', ' ', $key ) );
+                                    $score  = $data['score'] ?? 0;
+                                    $status = $data['status'] ?? 'good';
+                                    $weight = ( $data['weight'] ?? 0 ) * 100;
+                                    ?>
+                                    <div class="wcpa-breakdown-item">
+                                        <div class="wcpa-breakdown-header">
+                                            <span class="wcpa-breakdown-label"><?php echo esc_html( $label ); ?></span>
+                                            <span class="wcpa-breakdown-score"><?php echo esc_html( $score ); ?>/100</span>
+                                        </div>
+                                        <div class="wcpa-progress-bar">
+                                            <div class="wcpa-progress-fill wcpa-progress-<?php echo esc_attr( $status ); ?>" style="width: <?php echo esc_attr( $score ); ?>%;"></div>
+                                        </div>
+                                        <span class="wcpa-breakdown-weight"><?php echo esc_html( $weight ); ?>% weight</span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Store Stats & Quick Actions -->
+                    <div class="wcpa-dashboard-right">
+                        <!-- Store Overview -->
+                        <div class="wcpa-card wcpa-store-overview-card">
+                            <h3><?php esc_html_e( 'Store Overview', 'wc-performance-analyzer' ); ?></h3>
+                            <div class="wcpa-store-stats">
+                                <div class="wcpa-stat-item">
+                                    <span class="wcpa-stat-icon dashicons dashicons-products"></span>
+                                    <div class="wcpa-stat-content">
+                                        <span class="wcpa-stat-value"><?php echo esc_html( number_format( $metrics['total_products'] ?? 0 ) ); ?></span>
+                                        <span class="wcpa-stat-label"><?php esc_html_e( 'Products', 'wc-performance-analyzer' ); ?></span>
+                                    </div>
+                                </div>
+                                <div class="wcpa-stat-item">
+                                    <span class="wcpa-stat-icon dashicons dashicons-cart"></span>
+                                    <div class="wcpa-stat-content">
+                                        <span class="wcpa-stat-value"><?php echo esc_html( number_format( $metrics['total_orders'] ?? 0 ) ); ?></span>
+                                        <span class="wcpa-stat-label"><?php esc_html_e( 'Orders', 'wc-performance-analyzer' ); ?></span>
+                                    </div>
+                                </div>
+                                <div class="wcpa-stat-item">
+                                    <span class="wcpa-stat-icon dashicons dashicons-database"></span>
+                                    <div class="wcpa-stat-content">
+                                        <span class="wcpa-stat-value"><?php echo esc_html( number_format( $metrics['postmeta_rows'] ?? 0 ) ); ?></span>
+                                        <span class="wcpa-stat-label"><?php esc_html_e( 'Meta Rows', 'wc-performance-analyzer' ); ?></span>
+                                    </div>
+                                </div>
+                                <div class="wcpa-stat-item">
+                                    <span class="wcpa-stat-icon dashicons dashicons-backup"></span>
+                                    <div class="wcpa-stat-content">
+                                        <span class="wcpa-stat-value"><?php echo esc_html( number_format( $metrics['total_revisions'] ?? 0 ) ); ?></span>
+                                        <span class="wcpa-stat-label"><?php esc_html_e( 'Revisions', 'wc-performance-analyzer' ); ?></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Metrics -->
+                        <div class="wcpa-card wcpa-key-metrics-card">
+                            <h3><?php esc_html_e( 'Key Metrics', 'wc-performance-analyzer' ); ?></h3>
+                            <div class="wcpa-key-metrics">
+                                <?php
+                                $key_metrics = array(
+                                    array(
+                                        'label'  => __( 'Autoload Size', 'wc-performance-analyzer' ),
+                                        'value'  => $display_metrics['autoload_size']['value'] ?? '--',
+                                        'status' => $this->get_metric_status( $breakdown['autoload']['status'] ?? 'good' ),
+                                        'icon'   => 'admin-settings',
+                                    ),
+                                    array(
+                                        'label'  => __( 'Transients', 'wc-performance-analyzer' ),
+                                        'value'  => $display_metrics['transients']['value'] ?? '--',
+                                        'sub'    => $display_metrics['transients']['sub'] ?? '',
+                                        'status' => $this->get_metric_status( $breakdown['expired_transients']['status'] ?? 'good' ),
+                                        'icon'   => 'clock',
+                                    ),
+                                    array(
+                                        'label'  => __( 'WC Sessions', 'wc-performance-analyzer' ),
+                                        'value'  => $display_metrics['sessions']['value'] ?? '--',
+                                        'sub'    => $display_metrics['sessions']['sub'] ?? '',
+                                        'status' => $this->get_metric_status( $breakdown['wc_sessions']['status'] ?? 'good' ),
+                                        'icon'   => 'groups',
+                                    ),
+                                    array(
+                                        'label'  => __( 'Orphaned Meta', 'wc-performance-analyzer' ),
+                                        'value'  => $display_metrics['orphaned_meta']['value'] ?? '--',
+                                        'status' => $this->get_metric_status( $breakdown['orphaned_meta']['status'] ?? 'good' ),
+                                        'icon'   => 'editor-unlink',
+                                    ),
+                                );
+                                foreach ( $key_metrics as $metric ) :
+                                    ?>
+                                    <div class="wcpa-key-metric wcpa-metric-<?php echo esc_attr( $metric['status'] ); ?>">
+                                        <span class="wcpa-key-metric-icon dashicons dashicons-<?php echo esc_attr( $metric['icon'] ); ?>"></span>
+                                        <div class="wcpa-key-metric-content">
+                                            <span class="wcpa-key-metric-value"><?php echo esc_html( $metric['value'] ); ?></span>
+                                            <span class="wcpa-key-metric-label"><?php echo esc_html( $metric['label'] ); ?></span>
+                                            <?php if ( ! empty( $metric['sub'] ) ) : ?>
+                                                <span class="wcpa-key-metric-sub"><?php echo esc_html( $metric['sub'] ); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <span class="wcpa-metric-status-dot"></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="wcpa-card wcpa-quick-actions-card">
+                            <h3><?php esc_html_e( 'Quick Actions', 'wc-performance-analyzer' ); ?></h3>
+                            <div class="wcpa-quick-actions">
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-cleanup' ) ); ?>" class="wcpa-quick-action">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    <span><?php esc_html_e( 'Run Cleanup', 'wc-performance-analyzer' ); ?></span>
+                                </a>
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-query-log' ) ); ?>" class="wcpa-quick-action">
+                                    <span class="dashicons dashicons-list-view"></span>
+                                    <span><?php esc_html_e( 'Query Log', 'wc-performance-analyzer' ); ?></span>
+                                </a>
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-optimizations' ) ); ?>" class="wcpa-quick-action">
+                                    <span class="dashicons dashicons-performance"></span>
+                                    <span><?php esc_html_e( 'Optimizations', 'wc-performance-analyzer' ); ?></span>
+                                </a>
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-settings' ) ); ?>" class="wcpa-quick-action">
+                                    <span class="dashicons dashicons-admin-generic"></span>
+                                    <span><?php esc_html_e( 'Settings', 'wc-performance-analyzer' ); ?></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if ( ! empty( $recommendations ) ) : ?>
+                    <!-- Recommendations -->
+                    <div class="wcpa-card wcpa-recommendations-card">
+                        <h3>
+                            <span class="dashicons dashicons-lightbulb"></span>
+                            <?php esc_html_e( 'Recommendations', 'wc-performance-analyzer' ); ?>
+                        </h3>
+                        <div class="wcpa-recommendations-list">
+                            <?php foreach ( $recommendations as $rec ) : ?>
+                                <div class="wcpa-recommendation wcpa-recommendation-<?php echo esc_attr( $rec['type'] ); ?>">
+                                    <span class="wcpa-rec-icon dashicons dashicons-<?php echo $rec['type'] === 'critical' ? 'warning' : ( $rec['type'] === 'warning' ? 'flag' : 'info-outline' ); ?>"></span>
+                                    <div class="wcpa-rec-content">
+                                        <p class="wcpa-rec-message"><?php echo esc_html( $rec['message'] ); ?></p>
+                                        <?php if ( ! empty( $rec['action'] ) ) : ?>
+                                            <p class="wcpa-rec-action"><?php echo esc_html( $rec['action'] ); ?></p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Top Autoloaded Options -->
                 <div class="wcpa-card wcpa-autoload-card">
-                    <h2><?php esc_html_e( 'Top Autoloaded Options', 'wc-performance-analyzer' ); ?></h2>
+                    <h3>
+                        <span class="dashicons dashicons-database-view"></span>
+                        <?php esc_html_e( 'Top Autoloaded Options', 'wc-performance-analyzer' ); ?>
+                    </h3>
                     <?php
                     $top_autoload = $this->scanner->get_top_autoloaded_options( 10 );
                     if ( ! empty( $top_autoload ) ) :
                         ?>
-                        <table class="widefat striped">
+                        <table class="wcpa-table">
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e( 'Option Name', 'wc-performance-analyzer' ); ?></th>
-                                    <th><?php esc_html_e( 'Size', 'wc-performance-analyzer' ); ?></th>
+                                    <th class="wcpa-col-size"><?php esc_html_e( 'Size', 'wc-performance-analyzer' ); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ( $top_autoload as $option ) : ?>
                                     <tr>
                                         <td><code><?php echo esc_html( $option['name'] ); ?></code></td>
-                                        <td><?php echo esc_html( $option['size'] ); ?></td>
+                                        <td class="wcpa-col-size"><?php echo esc_html( $option['size'] ); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     <?php else : ?>
-                        <p><?php esc_html_e( 'No autoloaded options found.', 'wc-performance-analyzer' ); ?></p>
+                        <p class="wcpa-no-data"><?php esc_html_e( 'No autoloaded options found.', 'wc-performance-analyzer' ); ?></p>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>
         <?php
         $this->render_page_footer();
+    }
+
+    /**
+     * Get CSS class suffix for metric status.
+     *
+     * @param string $status Status string.
+     * @return string CSS class suffix.
+     */
+    private function get_metric_status( string $status ): string {
+        $map = array(
+            'excellent' => 'good',
+            'good'      => 'good',
+            'warning'   => 'warning',
+            'critical'  => 'critical',
+        );
+
+        return $map[ $status ] ?? 'good';
     }
 
     /**
