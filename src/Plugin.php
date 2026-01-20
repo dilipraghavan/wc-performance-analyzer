@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace suspended\WCPerformanceAnalyzer;
 
 use suspended\WCPerformanceAnalyzer\Admin\AdminMenu;
+use suspended\WCPerformanceAnalyzer\REST\RestController;
+use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 
 /**
  * Class Plugin
@@ -31,6 +33,20 @@ final class Plugin {
      * @var AdminMenu|null
      */
     private ?AdminMenu $admin_menu = null;
+
+    /**
+     * REST controller instance.
+     *
+     * @var RestController|null
+     */
+    private ?RestController $rest_controller = null;
+
+    /**
+     * Health scanner instance.
+     *
+     * @var HealthScanner|null
+     */
+    private ?HealthScanner $scanner = null;
 
     /**
      * Get plugin instance.
@@ -76,6 +92,9 @@ final class Plugin {
         // Load text domain.
         add_action( 'init', array( $this, 'load_textdomain' ) );
 
+        // Register REST API routes.
+        add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+
         // Admin-only hooks.
         if ( is_admin() ) {
             add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -88,16 +107,27 @@ final class Plugin {
      * @return void
      */
     private function init_components(): void {
+        // Initialize scanner.
+        $this->scanner = new HealthScanner();
+
+        // Initialize REST controller.
+        $this->rest_controller = new RestController();
+
         // Admin menu.
         if ( is_admin() ) {
-            $this->admin_menu = new AdminMenu();
+            $this->admin_menu = new AdminMenu( $this->scanner );
         }
+    }
 
-        // Future components will be initialized here:
-        // - HealthScanner
-        // - CleanupManager
-        // - QueryLogger
-        // - REST API
+    /**
+     * Register REST API routes.
+     *
+     * @return void
+     */
+    public function register_rest_routes(): void {
+        if ( $this->rest_controller ) {
+            $this->rest_controller->register_routes();
+        }
     }
 
     /**
@@ -169,5 +199,14 @@ final class Plugin {
      */
     public function get_admin_menu(): ?AdminMenu {
         return $this->admin_menu;
+    }
+
+    /**
+     * Get health scanner instance.
+     *
+     * @return HealthScanner|null
+     */
+    public function get_scanner(): ?HealthScanner {
+        return $this->scanner;
     }
 }

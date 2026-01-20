@@ -55,23 +55,32 @@
             e.preventDefault();
 
             const $button = $(e.currentTarget);
+            const originalText = $button.text();
 
+            $button.text(wcpaAdmin.strings.scanning);
             this.setButtonLoading($button, true);
 
             this.apiRequest('scan', 'POST')
                 .done(function(response) {
                     if (response.success) {
-                        WCPADashboard.updateHealthScore(response.data);
-                        WCPADashboard.updateMetrics(response.data.metrics);
-                        WCPADashboard.showNotice('success', wcpaAdmin.strings.success);
+                        WCPADashboard.showNotice('success', wcpaAdmin.strings.success + ' Reloading...');
+                        // Reload page to show updated data
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1000);
                     } else {
                         WCPADashboard.showNotice('error', response.data.message || wcpaAdmin.strings.error);
+                        $button.text(originalText);
+                        WCPADashboard.setButtonLoading($button, false);
                     }
                 })
-                .fail(function() {
-                    WCPADashboard.showNotice('error', wcpaAdmin.strings.error);
-                })
-                .always(function() {
+                .fail(function(xhr) {
+                    let errorMsg = wcpaAdmin.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    WCPADashboard.showNotice('error', errorMsg);
+                    $button.text(originalText);
                     WCPADashboard.setButtonLoading($button, false);
                 });
         },

@@ -148,22 +148,26 @@
 }
 
 /* Health Score Colors */
-.wcpa-score-excellent {
+.wcpa-score-excellent,
+.wcpa-score-green {
     background: linear-gradient(135deg, #00a32a 0%, #008a20 100%) !important;
     color: #fff !important;
 }
 
-.wcpa-score-good {
+.wcpa-score-good,
+.wcpa-score-yellow {
     background: linear-gradient(135deg, #dba617 0%, #c59415 100%) !important;
     color: #fff !important;
 }
 
-.wcpa-score-attention {
+.wcpa-score-attention,
+.wcpa-score-orange {
     background: linear-gradient(135deg, #f18500 0%, #d97706 100%) !important;
     color: #fff !important;
 }
 
-.wcpa-score-critical {
+.wcpa-score-critical,
+.wcpa-score-red {
     background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%) !important;
     color: #fff !important;
 }
@@ -199,6 +203,106 @@
     display: block;
     font-size: 13px;
     color: #646970;
+}
+
+.wcpa-metric-sub {
+    display: block;
+    font-size: 11px;
+    color: #8c8f94;
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   Recommendations
+   ========================================================================== */
+
+.wcpa-recommendations-card {
+    margin-top: 20px;
+}
+
+.wcpa-recommendations-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wcpa-recommendation {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.wcpa-recommendation:last-child {
+    margin-bottom: 0;
+}
+
+.wcpa-recommendation-critical {
+    background: #fcf0f1;
+    border-left: 3px solid #d63638;
+}
+
+.wcpa-recommendation-warning {
+    background: #fcf9e8;
+    border-left: 3px solid #dba617;
+}
+
+.wcpa-recommendation-info {
+    background: #f0f6fc;
+    border-left: 3px solid #72aee6;
+}
+
+.wcpa-rec-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.wcpa-recommendation-critical .wcpa-rec-icon {
+    color: #d63638;
+}
+
+.wcpa-recommendation-warning .wcpa-rec-icon {
+    color: #dba617;
+}
+
+.wcpa-recommendation-info .wcpa-rec-icon {
+    color: #72aee6;
+}
+
+.wcpa-rec-content {
+    flex: 1;
+}
+
+.wcpa-rec-message {
+    margin: 0 0 4px;
+    font-weight: 500;
+}
+
+.wcpa-rec-action {
+    margin: 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+/* ==========================================================================
+   Autoload Table
+   ========================================================================== */
+
+.wcpa-autoload-card {
+    margin-top: 20px;
+}
+
+.wcpa-autoload-card table {
+    margin-top: 10px;
+}
+
+.wcpa-autoload-card code {
+    font-size: 12px;
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
 }
 
 /* ==========================================================================
