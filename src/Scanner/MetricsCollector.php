@@ -77,10 +77,11 @@ class MetricsCollector {
      * @return int
      */
     public function get_autoload_size(): int {
+        // WordPress 6.6+ uses 'on'/'off', older versions use 'yes'/'no'.
         $result = $this->wpdb->get_var(
             "SELECT SUM(LENGTH(option_value)) 
              FROM {$this->wpdb->options} 
-             WHERE autoload = 'yes'"
+             WHERE autoload IN ('yes', 'on')"
         );
 
         return (int) $result;
@@ -95,7 +96,7 @@ class MetricsCollector {
         $result = $this->wpdb->get_var(
             "SELECT COUNT(*) 
              FROM {$this->wpdb->options} 
-             WHERE autoload = 'yes'"
+             WHERE autoload IN ('yes', 'on')"
         );
 
         return (int) $result;
@@ -371,11 +372,12 @@ class MetricsCollector {
      * @return array<int, array<string, mixed>>
      */
     public function get_top_autoloaded_options( int $limit = 10 ): array {
+        // WordPress 6.6+ uses 'on'/'off', older versions use 'yes'/'no'.
         $results = $this->wpdb->get_results(
             $this->wpdb->prepare(
                 "SELECT option_name, LENGTH(option_value) as size 
                  FROM {$this->wpdb->options} 
-                 WHERE autoload = 'yes' 
+                 WHERE autoload IN ('yes', 'on') 
                  ORDER BY size DESC 
                  LIMIT %d",
                 $limit
