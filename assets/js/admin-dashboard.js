@@ -101,13 +101,22 @@
             this.apiRequest('cleanup/preview', 'POST', { type: cleanupType })
                 .done(function(response) {
                     if (response.success) {
-                        WCPADashboard.showCleanupPreview(cleanupType, response.data);
+                        WCPADashboard.showNotice('info', response.message || wcpaAdmin.strings.success);
+                        // Update count display
+                        const $card = $('.wcpa-cleanup-card[data-type="' + cleanupType + '"]');
+                        if ($card.length && response.count !== undefined) {
+                            $card.find('.wcpa-count').text(response.count);
+                        }
                     } else {
-                        WCPADashboard.showNotice('error', response.data.message || wcpaAdmin.strings.error);
+                        WCPADashboard.showNotice('error', response.message || wcpaAdmin.strings.error);
                     }
                 })
-                .fail(function() {
-                    WCPADashboard.showNotice('error', wcpaAdmin.strings.error);
+                .fail(function(xhr) {
+                    let errorMsg = wcpaAdmin.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    WCPADashboard.showNotice('error', errorMsg);
                 })
                 .always(function() {
                     WCPADashboard.setButtonLoading($button, false);
@@ -134,14 +143,23 @@
             this.apiRequest('cleanup/run', 'POST', { type: cleanupType })
                 .done(function(response) {
                     if (response.success) {
-                        WCPADashboard.updateCleanupStats(cleanupType, response.data);
-                        WCPADashboard.showNotice('success', response.data.message || wcpaAdmin.strings.success);
+                        // Update count to show remaining items
+                        const $card = $('.wcpa-cleanup-card[data-type="' + cleanupType + '"]');
+                        if ($card.length) {
+                            const remaining = response.after !== undefined ? response.after : 0;
+                            $card.find('.wcpa-count').text(remaining);
+                        }
+                        WCPADashboard.showNotice('success', response.message || wcpaAdmin.strings.success);
                     } else {
-                        WCPADashboard.showNotice('error', response.data.message || wcpaAdmin.strings.error);
+                        WCPADashboard.showNotice('error', response.message || wcpaAdmin.strings.error);
                     }
                 })
-                .fail(function() {
-                    WCPADashboard.showNotice('error', wcpaAdmin.strings.error);
+                .fail(function(xhr) {
+                    let errorMsg = wcpaAdmin.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    WCPADashboard.showNotice('error', errorMsg);
                 })
                 .always(function() {
                     WCPADashboard.setButtonLoading($button, false);

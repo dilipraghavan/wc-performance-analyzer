@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace suspended\WCPerformanceAnalyzer;
 
 use suspended\WCPerformanceAnalyzer\Admin\AdminMenu;
+use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
 use suspended\WCPerformanceAnalyzer\REST\RestController;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 
@@ -47,6 +48,13 @@ final class Plugin {
      * @var HealthScanner|null
      */
     private ?HealthScanner $scanner = null;
+
+    /**
+     * Cleanup manager instance.
+     *
+     * @var CleanupManager|null
+     */
+    private ?CleanupManager $cleanup_manager = null;
 
     /**
      * Get plugin instance.
@@ -110,12 +118,15 @@ final class Plugin {
         // Initialize scanner.
         $this->scanner = new HealthScanner();
 
+        // Initialize cleanup manager.
+        $this->cleanup_manager = new CleanupManager();
+
         // Initialize REST controller.
-        $this->rest_controller = new RestController();
+        $this->rest_controller = new RestController( $this->scanner, $this->cleanup_manager );
 
         // Admin menu.
         if ( is_admin() ) {
-            $this->admin_menu = new AdminMenu( $this->scanner );
+            $this->admin_menu = new AdminMenu( $this->scanner, $this->cleanup_manager );
         }
     }
 

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace suspended\WCPerformanceAnalyzer\Admin;
 
+use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 
 /**
@@ -31,12 +32,21 @@ class AdminMenu {
     private HealthScanner $scanner;
 
     /**
+     * Cleanup manager instance.
+     *
+     * @var CleanupManager
+     */
+    private CleanupManager $cleanup_manager;
+
+    /**
      * Constructor.
      *
-     * @param HealthScanner $scanner Health scanner instance.
+     * @param HealthScanner  $scanner         Health scanner instance.
+     * @param CleanupManager $cleanup_manager Cleanup manager instance.
      */
-    public function __construct( HealthScanner $scanner ) {
-        $this->scanner = $scanner;
+    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager ) {
+        $this->scanner         = $scanner;
+        $this->cleanup_manager = $cleanup_manager;
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
     }
 
@@ -401,59 +411,97 @@ class AdminMenu {
      */
     public function render_cleanup_page(): void {
         $this->render_page_header( __( 'Cleanup Tools', 'wc-performance-analyzer' ) );
+
+        // Get cleanup stats.
+        $stats = $this->cleanup_manager->get_all_counts();
         ?>
         <div class="wcpa-cleanup-wrapper">
-            <div class="wcpa-notice wcpa-notice-info">
-                <p><?php esc_html_e( 'Cleanup tools coming in Phase 4.', 'wc-performance-analyzer' ); ?></p>
+            <div class="wcpa-notice wcpa-notice-warning">
+                <p>
+                    <strong><?php esc_html_e( 'Important:', 'wc-performance-analyzer' ); ?></strong>
+                    <?php esc_html_e( 'Always backup your database before running cleanup operations.', 'wc-performance-analyzer' ); ?>
+                </p>
             </div>
 
             <div class="wcpa-cleanup-grid">
                 <!-- Transients Cleanup -->
-                <div class="wcpa-cleanup-card">
+                <div class="wcpa-cleanup-card" data-type="transients">
                     <h3><?php esc_html_e( 'Expired Transients', 'wc-performance-analyzer' ); ?></h3>
                     <p><?php esc_html_e( 'Remove expired transient data from the database.', 'wc-performance-analyzer' ); ?></p>
                     <div class="wcpa-cleanup-stats">
-                        <span class="wcpa-count">--</span>
+                        <span class="wcpa-count"><?php echo esc_html( number_format( $stats['transients'] ?? 0 ) ); ?></span>
                         <span class="wcpa-label"><?php esc_html_e( 'items found', 'wc-performance-analyzer' ); ?></span>
                     </div>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?></button>
-                    <button type="button" class="button button-primary" disabled><?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?></button>
+                    <button type="button" class="button wcpa-preview-cleanup" data-type="transients">
+                        <?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <button type="button" class="button button-primary wcpa-execute-cleanup" data-type="transients">
+                        <?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?>
+                    </button>
                 </div>
 
                 <!-- Sessions Cleanup -->
-                <div class="wcpa-cleanup-card">
+                <div class="wcpa-cleanup-card" data-type="sessions">
                     <h3><?php esc_html_e( 'WooCommerce Sessions', 'wc-performance-analyzer' ); ?></h3>
                     <p><?php esc_html_e( 'Clear expired customer sessions.', 'wc-performance-analyzer' ); ?></p>
                     <div class="wcpa-cleanup-stats">
-                        <span class="wcpa-count">--</span>
+                        <span class="wcpa-count"><?php echo esc_html( number_format( $stats['sessions'] ?? 0 ) ); ?></span>
                         <span class="wcpa-label"><?php esc_html_e( 'items found', 'wc-performance-analyzer' ); ?></span>
                     </div>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?></button>
-                    <button type="button" class="button button-primary" disabled><?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?></button>
+                    <button type="button" class="button wcpa-preview-cleanup" data-type="sessions">
+                        <?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <button type="button" class="button button-primary wcpa-execute-cleanup" data-type="sessions">
+                        <?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?>
+                    </button>
                 </div>
 
                 <!-- Orphaned Meta Cleanup -->
-                <div class="wcpa-cleanup-card">
+                <div class="wcpa-cleanup-card" data-type="orphaned_meta">
                     <h3><?php esc_html_e( 'Orphaned Post Meta', 'wc-performance-analyzer' ); ?></h3>
                     <p><?php esc_html_e( 'Remove meta data for deleted posts.', 'wc-performance-analyzer' ); ?></p>
                     <div class="wcpa-cleanup-stats">
-                        <span class="wcpa-count">--</span>
+                        <span class="wcpa-count"><?php echo esc_html( number_format( $stats['orphaned_meta'] ?? 0 ) ); ?></span>
                         <span class="wcpa-label"><?php esc_html_e( 'items found', 'wc-performance-analyzer' ); ?></span>
                     </div>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?></button>
-                    <button type="button" class="button button-primary" disabled><?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?></button>
+                    <button type="button" class="button wcpa-preview-cleanup" data-type="orphaned_meta">
+                        <?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <button type="button" class="button button-primary wcpa-execute-cleanup" data-type="orphaned_meta">
+                        <?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?>
+                    </button>
                 </div>
 
                 <!-- Revisions Cleanup -->
-                <div class="wcpa-cleanup-card">
+                <div class="wcpa-cleanup-card" data-type="revisions">
                     <h3><?php esc_html_e( 'Post Revisions', 'wc-performance-analyzer' ); ?></h3>
-                    <p><?php esc_html_e( 'Remove excess post revisions.', 'wc-performance-analyzer' ); ?></p>
+                    <p><?php esc_html_e( 'Remove excess post revisions (keeps last 5).', 'wc-performance-analyzer' ); ?></p>
                     <div class="wcpa-cleanup-stats">
-                        <span class="wcpa-count">--</span>
+                        <span class="wcpa-count"><?php echo esc_html( number_format( $stats['revisions'] ?? 0 ) ); ?></span>
                         <span class="wcpa-label"><?php esc_html_e( 'items found', 'wc-performance-analyzer' ); ?></span>
                     </div>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?></button>
-                    <button type="button" class="button button-primary" disabled><?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?></button>
+                    <button type="button" class="button wcpa-preview-cleanup" data-type="revisions">
+                        <?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <button type="button" class="button button-primary wcpa-execute-cleanup" data-type="revisions">
+                        <?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?>
+                    </button>
+                </div>
+
+                <!-- Trash Cleanup -->
+                <div class="wcpa-cleanup-card" data-type="trash">
+                    <h3><?php esc_html_e( 'Trashed Posts', 'wc-performance-analyzer' ); ?></h3>
+                    <p><?php esc_html_e( 'Permanently delete trashed posts.', 'wc-performance-analyzer' ); ?></p>
+                    <div class="wcpa-cleanup-stats">
+                        <span class="wcpa-count"><?php echo esc_html( number_format( $stats['trash'] ?? 0 ) ); ?></span>
+                        <span class="wcpa-label"><?php esc_html_e( 'items found', 'wc-performance-analyzer' ); ?></span>
+                    </div>
+                    <button type="button" class="button wcpa-preview-cleanup" data-type="trash">
+                        <?php esc_html_e( 'Preview', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <button type="button" class="button button-primary wcpa-execute-cleanup" data-type="trash">
+                        <?php esc_html_e( 'Clean', 'wc-performance-analyzer' ); ?>
+                    </button>
                 </div>
             </div>
         </div>

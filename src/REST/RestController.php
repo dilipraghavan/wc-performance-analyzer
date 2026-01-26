@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace suspended\WCPerformanceAnalyzer\REST;
 
+use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -40,10 +41,21 @@ class RestController extends WP_REST_Controller {
     private HealthScanner $scanner;
 
     /**
-     * Constructor.
+     * Cleanup manager instance.
+     *
+     * @var CleanupManager
      */
-    public function __construct() {
-        $this->scanner = new HealthScanner();
+    private CleanupManager $cleanup_manager;
+
+    /**
+     * Constructor.
+     *
+     * @param HealthScanner  $scanner         Health scanner instance.
+     * @param CleanupManager $cleanup_manager Cleanup manager instance.
+     */
+    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager ) {
+        $this->scanner         = $scanner;
+        $this->cleanup_manager = $cleanup_manager;
     }
 
     /**
@@ -288,20 +300,10 @@ class RestController extends WP_REST_Controller {
      * @return WP_REST_Response
      */
     public function preview_cleanup( WP_REST_Request $request ): WP_REST_Response {
-        $type = $request->get_param( 'type' );
+        $type   = $request->get_param( 'type' );
+        $result = $this->cleanup_manager->preview( $type );
 
-        // Placeholder - will be implemented in Phase 4.
-        return new WP_REST_Response(
-            array(
-                'success' => true,
-                'data'    => array(
-                    'type'    => $type,
-                    'count'   => 0,
-                    'message' => __( 'Cleanup preview coming in Phase 4.', 'wc-performance-analyzer' ),
-                ),
-            ),
-            200
-        );
+        return new WP_REST_Response( $result, $result['success'] ? 200 : 400 );
     }
 
     /**
@@ -311,20 +313,10 @@ class RestController extends WP_REST_Controller {
      * @return WP_REST_Response
      */
     public function run_cleanup( WP_REST_Request $request ): WP_REST_Response {
-        $type = $request->get_param( 'type' );
+        $type   = $request->get_param( 'type' );
+        $result = $this->cleanup_manager->execute( $type );
 
-        // Placeholder - will be implemented in Phase 4.
-        return new WP_REST_Response(
-            array(
-                'success' => true,
-                'data'    => array(
-                    'type'    => $type,
-                    'deleted' => 0,
-                    'message' => __( 'Cleanup execution coming in Phase 4.', 'wc-performance-analyzer' ),
-                ),
-            ),
-            200
-        );
+        return new WP_REST_Response( $result, $result['success'] ? 200 : 400 );
     }
 
     /**
