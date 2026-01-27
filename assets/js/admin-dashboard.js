@@ -37,13 +37,19 @@
 
             // Query log toggle
             $(document).on('change', '.wcpa-toggle-query-log', this.handleToggleQueryLog.bind(this));
+
+            // Clear query logs
+            $(document).on('click', '.wcpa-clear-logs:not(:disabled)', this.handleClearQueryLogs.bind(this));
         },
 
         /**
          * Initialize UI components.
          */
         initComponents: function() {
-            // Future: Initialize charts, gauges, etc.
+            // Load query log stats if on query log page
+            if ($('.wcpa-query-log-wrapper').length) {
+                this.loadQueryLogStats();
+            }
         },
 
         /**
@@ -174,20 +180,77 @@
         handleToggleQueryLog: function(e) {
             const enabled = $(e.currentTarget).is(':checked');
 
-            this.apiRequest('settings', 'POST', { query_log_enabled: enabled })
+            this.apiRequest('query-log/toggle', 'POST', { enabled: enabled })
                 .done(function(response) {
                     if (response.success) {
-                        WCPADashboard.showNotice('success', wcpaAdmin.strings.success);
+                        WCPADashboard.showNotice('success', response.message);
+                        $('.wcpa-log-status').text(enabled ? wcpaAdmin.strings.enabled || 'Enabled' : wcpaAdmin.strings.disabled || 'Disabled');
                     } else {
                         // Revert toggle
                         $(e.currentTarget).prop('checked', !enabled);
-                        WCPADashboard.showNotice('error', response.data.message || wcpaAdmin.strings.error);
+                        WCPADashboard.showNotice('error', response.message || wcpaAdmin.strings.error);
+                    }
+                })
+                .fail(function(xhr) {
+                    // Revert toggle
+                    $(e.currentTarget).prop('checked', !enabled);
+                    let errorMsg = wcpaAdmin.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    WCPADashboard.showNotice('error', errorMsg);
+                });
+        },
+
+        /**
+         * Handle clear query logs button click.
+         *
+         * @param {Event} e Click event.
+         */
+        handleClearQueryLogs: function(e) {
+            e.preventDefault();
+
+            if (!confirm(wcpaAdmin.strings.confirmClearLogs || 'Clear all query logs?')) {
+                return;
+            }
+
+            const $button = $(e.currentTarget);
+            this.setButtonLoading($button, true);
+
+            this.apiRequest('query-log/clear', 'POST')
+                .done(function(response) {
+                    if (response.success) {
+                        WCPADashboard.showNotice('success', response.message);
+                        $('.wcpa-log-count').text('0');
+                    } else {
+                        WCPADashboard.showNotice('error', response.message || wcpaAdmin.strings.error);
+                    }
+                })
+                .fail(function(xhr) {
+                    let errorMsg = wcpaAdmin.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    WCPADashboard.showNotice('error', errorMsg);
+                })
+                .always(function() {
+                    WCPADashboard.setButtonLoading($button, false);
+                });
+        },
+
+        /**
+         * Load query log statistics.
+         */
+        loadQueryLogStats: function() {
+            this.apiRequest('query-log/stats', 'GET')
+                .done(function(response) {
+                    if (response.success) {
+                        $('.wcpa-log-count').text(response.count || '0');
+                        $('.wcpa-log-status').text(response.enabled ? (wcpaAdmin.strings.enabled || 'Enabled') : (wcpaAdmin.strings.disabled || 'Disabled'));
                     }
                 })
                 .fail(function() {
-                    // Revert toggle
-                    $(e.currentTarget).prop('checked', !enabled);
-                    WCPADashboard.showNotice('error', wcpaAdmin.strings.error);
+                    $('.wcpa-log-count').text('--');
                 });
         },
 

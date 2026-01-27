@@ -57,18 +57,21 @@ class Activator {
         $query_log_table = $wpdb->prefix . 'wcpa_query_log';
         $query_log_sql   = "CREATE TABLE {$query_log_table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            query_sql TEXT NOT NULL,
-            execution_time FLOAT NOT NULL DEFAULT 0,
-            backtrace TEXT,
+            query TEXT NOT NULL,
             query_type VARCHAR(20) DEFAULT 'SELECT',
-            flagged_pattern VARCHAR(50) DEFAULT NULL,
-            page_url VARCHAR(255) DEFAULT NULL,
+            execution_time FLOAT NOT NULL DEFAULT 0,
+            caller TEXT,
+            stack_trace TEXT,
+            request_uri VARCHAR(255) DEFAULT NULL,
+            request_type VARCHAR(20) DEFAULT 'web',
+            is_admin TINYINT(1) DEFAULT 0,
+            user_id BIGINT UNSIGNED DEFAULT 0,
             logged_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY idx_execution_time (execution_time),
-            KEY idx_flagged_pattern (flagged_pattern),
+            KEY idx_query_type (query_type),
             KEY idx_logged_at (logged_at),
-            KEY idx_query_type (query_type)
+            KEY idx_request_type (request_type)
         ) {$charset_collate};";
 
         // Metrics snapshots table.

@@ -516,38 +516,75 @@ class AdminMenu {
      */
     public function render_query_log_page(): void {
         $this->render_page_header( __( 'Query Log', 'wc-performance-analyzer' ) );
+
+        $settings = get_option( 'wcpa_settings', array() );
+        $is_enabled = ! empty( $settings['query_log_enabled'] );
         ?>
         <div class="wcpa-query-log-wrapper">
+            <div class="wcpa-notice wcpa-notice-warning">
+                <p>
+                    <strong><?php esc_html_e( 'Performance Impact:', 'wc-performance-analyzer' ); ?></strong>
+                    <?php esc_html_e( 'Query logging impacts site performance. Enable only for debugging and disable when done.', 'wc-performance-analyzer' ); ?>
+                </p>
+            </div>
+
+            <div class="wcpa-card">
+                <h3><?php esc_html_e( 'Query Logger Controls', 'wc-performance-analyzer' ); ?></h3>
+                
+                <div class="wcpa-query-log-controls">
+                    <label class="wcpa-toggle-label">
+                        <input type="checkbox" class="wcpa-toggle-query-log" <?php checked( $is_enabled ); ?>>
+                        <?php esc_html_e( 'Enable Query Logging', 'wc-performance-analyzer' ); ?>
+                    </label>
+                    
+                    <div class="wcpa-query-log-stats">
+                        <div class="wcpa-stat">
+                            <span class="wcpa-stat-label"><?php esc_html_e( 'Status:', 'wc-performance-analyzer' ); ?></span>
+                            <span class="wcpa-stat-value wcpa-log-status">
+                                <?php echo $is_enabled ? esc_html__( 'Enabled', 'wc-performance-analyzer' ) : esc_html__( 'Disabled', 'wc-performance-analyzer' ); ?>
+                            </span>
+                        </div>
+                        <div class="wcpa-stat">
+                            <span class="wcpa-stat-label"><?php esc_html_e( 'Logged Queries:', 'wc-performance-analyzer' ); ?></span>
+                            <span class="wcpa-stat-value wcpa-log-count">--</span>
+                        </div>
+                        <div class="wcpa-stat">
+                            <span class="wcpa-stat-label"><?php esc_html_e( 'Threshold:', 'wc-performance-analyzer' ); ?></span>
+                            <span class="wcpa-stat-value"><?php echo isset( $settings['query_log_threshold'] ) ? esc_html( $settings['query_log_threshold'] ) : '0.05'; ?>s</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="button wcpa-clear-logs">
+                        <?php esc_html_e( 'Clear All Logs', 'wc-performance-analyzer' ); ?>
+                    </button>
+                </div>
+            </div>
+
             <div class="wcpa-notice wcpa-notice-info">
-                <p><?php esc_html_e( 'Query logging coming in Phase 5 & 6.', 'wc-performance-analyzer' ); ?></p>
+                <p><?php esc_html_e( 'Query Log Viewer coming in Phase 6. Queries are being logged to the database.', 'wc-performance-analyzer' ); ?></p>
             </div>
 
-            <div class="wcpa-query-log-controls">
-                <label>
-                    <input type="checkbox" disabled>
-                    <?php esc_html_e( 'Enable Query Logging', 'wc-performance-analyzer' ); ?>
-                </label>
-                <span class="wcpa-warning"><?php esc_html_e( '(Impacts performance - use for debugging only)', 'wc-performance-analyzer' ); ?></span>
+            <div class="wcpa-card">
+                <h3><?php esc_html_e( 'Query Log Preview', 'wc-performance-analyzer' ); ?></h3>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;"><?php esc_html_e( 'Query', 'wc-performance-analyzer' ); ?></th>
+                            <th style="width: 10%;"><?php esc_html_e( 'Type', 'wc-performance-analyzer' ); ?></th>
+                            <th style="width: 10%;"><?php esc_html_e( 'Time (s)', 'wc-performance-analyzer' ); ?></th>
+                            <th style="width: 15%;"><?php esc_html_e( 'Request', 'wc-performance-analyzer' ); ?></th>
+                            <th style="width: 15%;"><?php esc_html_e( 'Logged', 'wc-performance-analyzer' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px;">
+                                <?php esc_html_e( 'Full query viewer coming in Phase 6.', 'wc-performance-analyzer' ); ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e( 'Query', 'wc-performance-analyzer' ); ?></th>
-                        <th><?php esc_html_e( 'Time (s)', 'wc-performance-analyzer' ); ?></th>
-                        <th><?php esc_html_e( 'Pattern', 'wc-performance-analyzer' ); ?></th>
-                        <th><?php esc_html_e( 'Page', 'wc-performance-analyzer' ); ?></th>
-                        <th><?php esc_html_e( 'Logged', 'wc-performance-analyzer' ); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 40px;">
-                            <?php esc_html_e( 'No queries logged yet.', 'wc-performance-analyzer' ); ?>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
         <?php
         $this->render_page_footer();

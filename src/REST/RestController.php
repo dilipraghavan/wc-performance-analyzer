@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace suspended\WCPerformanceAnalyzer\REST;
 
 use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
+use suspended\WCPerformanceAnalyzer\Logger\QueryLogger;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -48,14 +49,23 @@ class RestController extends WP_REST_Controller {
     private CleanupManager $cleanup_manager;
 
     /**
+     * Query logger instance.
+     *
+     * @var QueryLogger
+     */
+    private QueryLogger $query_logger;
+
+    /**
      * Constructor.
      *
      * @param HealthScanner  $scanner         Health scanner instance.
      * @param CleanupManager $cleanup_manager Cleanup manager instance.
+     * @param QueryLogger    $query_logger    Query logger instance.
      */
-    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager ) {
+    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager, QueryLogger $query_logger ) {
         $this->scanner         = $scanner;
         $this->cleanup_manager = $cleanup_manager;
+        $this->query_logger    = $query_logger;
     }
 
     /**
@@ -178,6 +188,49 @@ class RestController extends WP_REST_Controller {
                 array(
                     'methods'             => WP_REST_Server::CREATABLE,
                     'callback'            => array( $this, 'update_settings' ),
+                    'permission_callback' => array( $this, 'check_admin_permission' ),
+                ),
+            )
+        );
+
+        // Query log endpoints.
+        register_rest_route(
+            $this->namespace,
+            '/query-log/toggle',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::CREATABLE,
+                    'callback'            => array( $this, 'toggle_query_log' ),
+                    'permission_callback' => array( $this, 'check_admin_permission' ),
+                    'args'                => array(
+                        'enabled' => array(
+                            'type'     => 'boolean',
+                            'required' => true,
+                        ),
+                    ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/query-log/stats',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array( $this, 'get_query_log_stats' ),
+                    'permission_callback' => array( $this, 'check_admin_permission' ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/query-log/clear',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::CREATABLE,
+                    'callback'            => array( $this, 'clear_query_logs' ),
                     'permission_callback' => array( $this, 'check_admin_permission' ),
                 ),
             )
@@ -402,5 +455,75 @@ class RestController extends WP_REST_Controller {
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Toggle query logging.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function toggle_query_log( WP_REST_Request $request ): WP_REST_Response {
+        $enabled = $request->get_param( 'enabled' );
+
+        if ( $enabled ) {
+            $this->query_logger->enable();
+            $message = __( 'Query logging enabled.', 'wc-performance-analyzer' );
+        } else {
+            $this->query_logger->disable();
+            $message = __( 'Query logging disabled.', 'wc-performance-analyzer' );
+        }
+
+        return new WP_REST_Response(
+            array(
+                'success' => true,
+                'enabled' => $enabled,
+                'message' => $message,
+            ),
+            200
+        );
+    }
+
+    /**
+     * Get query log statistics.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function get_query_log_stats( WP_REST_Request $request ): WP_REST_Response {
+        $total_count = $this->query_logger->get_log_count();
+        $is_enabled  = $this->query_logger->is_enabled();
+
+        return new WP_REST_Response(
+            array(
+                'success' => true,
+                'enabled' => $is_enabled,
+                'count'   => $total_count,
+            ),
+            200
+        );
+    }
+
+    /**
+     * Clear query logs.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function clear_query_logs( WP_REST_Request $request ): WP_REST_Response {
+        $deleted = $this->query_logger->clear_all_logs();
+
+        return new WP_REST_Response(
+            array(
+                'success' => true,
+                'deleted' => $deleted,
+                'message' => sprintf(
+                    /* translators: %d: number of logs cleared */
+                    __( 'Cleared %d query logs.', 'wc-performance-analyzer' ),
+                    $deleted
+                ),
+            ),
+            200
+        );
     }
 }
