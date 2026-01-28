@@ -24,7 +24,7 @@ class Activator {
     /**
      * Current database version.
      */
-    private const DB_VERSION = '1.0.0';
+    private const DB_VERSION = '1.1.0';
 
     /**
      * Activate the plugin.
@@ -32,7 +32,7 @@ class Activator {
      * @return void
      */
     public static function activate(): void {
-        self::create_tables();
+        self::upgrade_database();
         self::set_default_options();
         self::schedule_events();
 
@@ -41,6 +41,46 @@ class Activator {
 
         // Flush rewrite rules.
         flush_rewrite_rules();
+    }
+
+    /**
+     * Upgrade database if needed.
+     *
+     * @return void
+     */
+    private static function upgrade_database(): void {
+        $current_version = get_option( self::DB_VERSION_OPTION, '0.0.0' );
+
+        // Fresh install or upgrade needed.
+        if ( version_compare( $current_version, self::DB_VERSION, '<' ) ) {
+            self::create_tables();
+            
+            // If upgrading from pre-1.1.0, fix query column name if needed.
+            if ( version_compare( $current_version, '1.1.0', '<' ) && $current_version !== '0.0.0' ) {
+                self::fix_query_column();
+            }
+        }
+    }
+
+    /**
+     * Fix query_text column to query if it exists.
+     *
+     * @return void
+     */
+    private static function fix_query_column(): void {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'wcpa_query_log';
+        
+        // Check if query_text column exists.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $column = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'query_text'" );
+        
+        if ( ! empty( $column ) ) {
+            // Rename query_text to query.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+            $wpdb->query( "ALTER TABLE {$table} CHANGE COLUMN query_text query TEXT NOT NULL" );
+        }
     }
 
     /**

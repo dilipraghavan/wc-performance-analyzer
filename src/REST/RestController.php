@@ -13,6 +13,7 @@ namespace suspended\WCPerformanceAnalyzer\REST;
 
 use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
 use suspended\WCPerformanceAnalyzer\Logger\QueryLogger;
+use suspended\WCPerformanceAnalyzer\Logger\QueryLogViewer;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -56,16 +57,30 @@ class RestController extends WP_REST_Controller {
     private QueryLogger $query_logger;
 
     /**
+     * Query log viewer instance.
+     *
+     * @var QueryLogViewer
+     */
+    private QueryLogViewer $query_log_viewer;
+
+    /**
      * Constructor.
      *
-     * @param HealthScanner  $scanner         Health scanner instance.
-     * @param CleanupManager $cleanup_manager Cleanup manager instance.
-     * @param QueryLogger    $query_logger    Query logger instance.
+     * @param HealthScanner  $scanner          Health scanner instance.
+     * @param CleanupManager $cleanup_manager  Cleanup manager instance.
+     * @param QueryLogger    $query_logger     Query logger instance.
+     * @param QueryLogViewer $query_log_viewer Query log viewer instance.
      */
-    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager, QueryLogger $query_logger ) {
-        $this->scanner         = $scanner;
-        $this->cleanup_manager = $cleanup_manager;
-        $this->query_logger    = $query_logger;
+    public function __construct( 
+        HealthScanner $scanner, 
+        CleanupManager $cleanup_manager, 
+        QueryLogger $query_logger,
+        QueryLogViewer $query_log_viewer
+    ) {
+        $this->scanner          = $scanner;
+        $this->cleanup_manager  = $cleanup_manager;
+        $this->query_logger     = $query_logger;
+        $this->query_log_viewer = $query_log_viewer;
     }
 
     /**
@@ -232,6 +247,51 @@ class RestController extends WP_REST_Controller {
                     'methods'             => WP_REST_Server::CREATABLE,
                     'callback'            => array( $this, 'clear_query_logs' ),
                     'permission_callback' => array( $this, 'check_admin_permission' ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/query-log/logs',
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array( $this, 'get_query_logs' ),
+                    'permission_callback' => array( $this, 'check_admin_permission' ),
+                    'args'                => array(
+                        'page'         => array(
+                            'type'    => 'integer',
+                            'default' => 1,
+                            'minimum' => 1,
+                        ),
+                        'per_page'     => array(
+                            'type'    => 'integer',
+                            'default' => 20,
+                            'minimum' => 1,
+                            'maximum' => 100,
+                        ),
+                        'query_type'   => array(
+                            'type'    => 'string',
+                            'default' => '',
+                        ),
+                        'request_type' => array(
+                            'type'    => 'string',
+                            'default' => '',
+                        ),
+                        'search'       => array(
+                            'type'    => 'string',
+                            'default' => '',
+                        ),
+                        'orderby'      => array(
+                            'type'    => 'string',
+                            'default' => 'logged_at',
+                        ),
+                        'order'        => array(
+                            'type'    => 'string',
+                            'default' => 'DESC',
+                        ),
+                    ),
                 ),
             )
         );
@@ -522,6 +582,38 @@ class RestController extends WP_REST_Controller {
                     __( 'Cleared %d query logs.', 'wc-performance-analyzer' ),
                     $deleted
                 ),
+            ),
+            200
+        );
+    }
+
+    /**
+     * Get query logs with pagination and filtering.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function get_query_logs( WP_REST_Request $request ): WP_REST_Response {
+        $args = array(
+            'page'         => $request->get_param( 'page' ),
+            'per_page'     => $request->get_param( 'per_page' ),
+            'query_type'   => $request->get_param( 'query_type' ),
+            'request_type' => $request->get_param( 'request_type' ),
+            'search'       => $request->get_param( 'search' ),
+            'orderby'      => $request->get_param( 'orderby' ),
+            'order'        => $request->get_param( 'order' ),
+        );
+
+        $result = $this->query_log_viewer->get_logs( $args );
+
+        return new WP_REST_Response(
+            array(
+                'success' => true,
+                'logs'    => $result['logs'],
+                'total'   => $result['total'],
+                'page'    => $result['page'],
+                'per_page' => $result['per_page'],
+                'total_pages' => $result['total_pages'],
             ),
             200
         );

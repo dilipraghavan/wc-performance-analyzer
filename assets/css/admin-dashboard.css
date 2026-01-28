@@ -847,6 +847,117 @@
     font-size: 12px;
 }
 
+/* Query Log Filters */
+.wcpa-query-log-filters h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.wcpa-filters-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.wcpa-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.wcpa-filter label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.wcpa-filter select,
+.wcpa-filter input[type="text"] {
+    min-width: 180px;
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+.wcpa-filter input[type="text"] {
+    width: 250px;
+}
+
+/* Query Log Table */
+.wcpa-query-log-viewer {
+    margin-top: 20px;
+}
+
+.wcpa-logs-table {
+    margin-top: 0 !important;
+}
+
+.wcpa-logs-table code {
+    background: #f6f7f7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    word-break: break-all;
+    display: block;
+}
+
+.wcpa-query-type {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wcpa-time-critical {
+    color: #d63638;
+    font-weight: 600;
+}
+
+.wcpa-time-warning {
+    color: #f0b849;
+    font-weight: 600;
+}
+
+.wcpa-time-attention {
+    color: #dba617;
+    font-weight: 600;
+}
+
+.wcpa-time-good {
+    color: #00a32a;
+}
+
+.wcpa-view-log-detail {
+    color: #2271b1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.wcpa-view-log-detail:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+/* Pagination */
+.wcpa-pagination {
+    margin-top: 16px;
+}
+
+.wcpa-pagination .tablenav-pages {
+    float: none;
+    text-align: center;
+}
+
+/* Loading State */
+.wcpa-loading {
+    color: #646970;
+    font-style: italic;
+}
+
 /* ==========================================================================
    Optimizations
    ========================================================================== */

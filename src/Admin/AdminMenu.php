@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace suspended\WCPerformanceAnalyzer\Admin;
 
 use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
+use suspended\WCPerformanceAnalyzer\Logger\QueryLogViewer;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 
 /**
@@ -39,14 +40,23 @@ class AdminMenu {
     private CleanupManager $cleanup_manager;
 
     /**
+     * Query log viewer instance.
+     *
+     * @var QueryLogViewer
+     */
+    private QueryLogViewer $query_log_viewer;
+
+    /**
      * Constructor.
      *
-     * @param HealthScanner  $scanner         Health scanner instance.
-     * @param CleanupManager $cleanup_manager Cleanup manager instance.
+     * @param HealthScanner  $scanner          Health scanner instance.
+     * @param CleanupManager $cleanup_manager  Cleanup manager instance.
+     * @param QueryLogViewer $query_log_viewer Query log viewer instance.
      */
-    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager ) {
-        $this->scanner         = $scanner;
-        $this->cleanup_manager = $cleanup_manager;
+    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager, QueryLogViewer $query_log_viewer ) {
+        $this->scanner          = $scanner;
+        $this->cleanup_manager  = $cleanup_manager;
+        $this->query_log_viewer = $query_log_viewer;
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
     }
 
@@ -519,6 +529,19 @@ class AdminMenu {
 
         $settings = get_option( 'wcpa_settings', array() );
         $is_enabled = ! empty( $settings['query_log_enabled'] );
+        
+        // Get filter options.
+        $filter_options = $this->query_log_viewer->get_filter_options();
+        
+        // Add default query types if none exist.
+        if ( empty( $filter_options['query_types'] ) ) {
+            $filter_options['query_types'] = array( 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'REPLACE' );
+        }
+        
+        // Add default request types if none exist.
+        if ( empty( $filter_options['request_types'] ) ) {
+            $filter_options['request_types'] = array( 'web', 'ajax', 'cron', 'rest', 'cli' );
+        }
         ?>
         <div class="wcpa-query-log-wrapper">
             <div class="wcpa-notice wcpa-notice-warning">
@@ -560,30 +583,52 @@ class AdminMenu {
                 </div>
             </div>
 
-            <div class="wcpa-notice wcpa-notice-info">
-                <p><?php esc_html_e( 'Query Log Viewer coming in Phase 6. Queries are being logged to the database.', 'wc-performance-analyzer' ); ?></p>
-            </div>
-
             <div class="wcpa-card">
-                <h3><?php esc_html_e( 'Query Log Preview', 'wc-performance-analyzer' ); ?></h3>
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;"><?php esc_html_e( 'Query', 'wc-performance-analyzer' ); ?></th>
-                            <th style="width: 10%;"><?php esc_html_e( 'Type', 'wc-performance-analyzer' ); ?></th>
-                            <th style="width: 10%;"><?php esc_html_e( 'Time (s)', 'wc-performance-analyzer' ); ?></th>
-                            <th style="width: 15%;"><?php esc_html_e( 'Request', 'wc-performance-analyzer' ); ?></th>
-                            <th style="width: 15%;"><?php esc_html_e( 'Logged', 'wc-performance-analyzer' ); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 40px;">
-                                <?php esc_html_e( 'Full query viewer coming in Phase 6.', 'wc-performance-analyzer' ); ?>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="wcpa-query-log-filters">
+                    <h3><?php esc_html_e( 'Filter Logs', 'wc-performance-analyzer' ); ?></h3>
+                    
+                    <div class="wcpa-filters-row">
+                        <div class="wcpa-filter">
+                            <label for="wcpa-filter-type"><?php esc_html_e( 'Query Type:', 'wc-performance-analyzer' ); ?></label>
+                            <select id="wcpa-filter-type" class="wcpa-filter-query-type">
+                                <option value=""><?php esc_html_e( 'All Types', 'wc-performance-analyzer' ); ?></option>
+                                <?php foreach ( $filter_options['query_types'] as $type ) : ?>
+                                    <option value="<?php echo esc_attr( $type ); ?>"><?php echo esc_html( $type ); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="wcpa-filter">
+                            <label for="wcpa-filter-request"><?php esc_html_e( 'Request Type:', 'wc-performance-analyzer' ); ?></label>
+                            <select id="wcpa-filter-request" class="wcpa-filter-request-type">
+                                <option value=""><?php esc_html_e( 'All Requests', 'wc-performance-analyzer' ); ?></option>
+                                <?php foreach ( $filter_options['request_types'] as $type ) : ?>
+                                    <option value="<?php echo esc_attr( $type ); ?>"><?php echo esc_html( $type ); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="wcpa-filter">
+                            <label for="wcpa-filter-search"><?php esc_html_e( 'Search Query:', 'wc-performance-analyzer' ); ?></label>
+                            <input type="text" id="wcpa-filter-search" class="wcpa-filter-search" placeholder="<?php esc_attr_e( 'Search SQL...', 'wc-performance-analyzer' ); ?>">
+                        </div>
+
+                        <div class="wcpa-filter">
+                            <button type="button" class="button wcpa-apply-filters"><?php esc_html_e( 'Apply Filters', 'wc-performance-analyzer' ); ?></button>
+                            <button type="button" class="button wcpa-reset-filters"><?php esc_html_e( 'Reset', 'wc-performance-analyzer' ); ?></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wcpa-query-log-viewer" id="wcpa-query-log-table">
+                    <div class="wcpa-loading" style="text-align: center; padding: 40px;">
+                        <?php esc_html_e( 'Loading query logs...', 'wc-performance-analyzer' ); ?>
+                    </div>
+                </div>
+
+                <div class="wcpa-pagination" id="wcpa-log-pagination" style="display: none;">
+                    <!-- Pagination will be inserted by JavaScript -->
+                </div>
             </div>
         </div>
         <?php

@@ -12,6 +12,7 @@ namespace suspended\WCPerformanceAnalyzer;
 use suspended\WCPerformanceAnalyzer\Admin\AdminMenu;
 use suspended\WCPerformanceAnalyzer\Cleanup\CleanupManager;
 use suspended\WCPerformanceAnalyzer\Logger\QueryLogger;
+use suspended\WCPerformanceAnalyzer\Logger\QueryLogViewer;
 use suspended\WCPerformanceAnalyzer\REST\RestController;
 use suspended\WCPerformanceAnalyzer\Scanner\HealthScanner;
 
@@ -63,6 +64,13 @@ final class Plugin {
      * @var QueryLogger|null
      */
     private ?QueryLogger $query_logger = null;
+
+    /**
+     * Query log viewer instance.
+     *
+     * @var QueryLogViewer|null
+     */
+    private ?QueryLogViewer $query_log_viewer = null;
 
     /**
      * Get plugin instance.
@@ -129,16 +137,26 @@ final class Plugin {
         // Initialize cleanup manager.
         $this->cleanup_manager = new CleanupManager();
 
-        // Initialize query logger.
+        // Initialize query logger and viewer.
         $this->query_logger = new QueryLogger();
         $this->query_logger->start();
+        $this->query_log_viewer = new QueryLogViewer();
 
         // Initialize REST controller.
-        $this->rest_controller = new RestController( $this->scanner, $this->cleanup_manager, $this->query_logger );
+        $this->rest_controller = new RestController( 
+            $this->scanner, 
+            $this->cleanup_manager, 
+            $this->query_logger,
+            $this->query_log_viewer
+        );
 
         // Admin menu.
         if ( is_admin() ) {
-            $this->admin_menu = new AdminMenu( $this->scanner, $this->cleanup_manager );
+            $this->admin_menu = new AdminMenu( 
+                $this->scanner, 
+                $this->cleanup_manager,
+                $this->query_log_viewer
+            );
         }
     }
 

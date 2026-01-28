@@ -40,6 +40,13 @@
 
             // Clear query logs
             $(document).on('click', '.wcpa-clear-logs:not(:disabled)', this.handleClearQueryLogs.bind(this));
+
+            // Query log filters
+            $(document).on('click', '.wcpa-apply-filters', this.handleApplyFilters.bind(this));
+            $(document).on('click', '.wcpa-reset-filters', this.handleResetFilters.bind(this));
+
+            // Query log pagination
+            $(document).on('click', '.wcpa-log-page', this.handleLogPagination.bind(this));
         },
 
         /**
@@ -49,6 +56,7 @@
             // Load query log stats if on query log page
             if ($('.wcpa-query-log-wrapper').length) {
                 this.loadQueryLogStats();
+                this.loadQueryLogs();
             }
         },
 
@@ -236,6 +244,228 @@
                 .always(function() {
                     WCPADashboard.setButtonLoading($button, false);
                 });
+        },
+
+        /**
+         * Load query log statistics.
+         */
+        loadQueryLogStats: function() {
+            this.apiRequest('query-log/stats', 'GET')
+                .done(function(response) {
+                    if (response.success) {
+                        $('.wcpa-log-count').text(response.count || '0');
+                        $('.wcpa-log-status').text(response.enabled ? (wcpaAdmin.strings.enabled || 'Enabled') : (wcpaAdmin.strings.disabled || 'Disabled'));
+                    }
+                })
+                .fail(function() {
+                    $('.wcpa-log-count').text('--');
+                });
+        },
+
+        /**
+         * Load query logs.
+         *
+         * @param {number} page Page number.
+         */
+        loadQueryLogs: function(page) {
+            page = page || 1;
+
+            const params = {
+                page: page,
+                per_page: 20,
+                query_type: $('.wcpa-filter-query-type').val() || '',
+                request_type: $('.wcpa-filter-request-type').val() || '',
+                search: $('.wcpa-filter-search').val() || ''
+            };
+
+            $('#wcpa-query-log-table').html('<div class="wcpa-loading" style="text-align: center; padding: 40px;">Loading query logs...</div>');
+
+            this.apiRequest('query-log/logs', 'GET', params)
+                .done(function(response) {
+                    if (response.success) {
+                        WCPADashboard.renderQueryLogs(response);
+                    } else {
+                        $('#wcpa-query-log-table').html('<div style="text-align: center; padding: 40px;">Failed to load logs.</div>');
+                    }
+                })
+                .fail(function() {
+                    $('#wcpa-query-log-table').html('<div style="text-align: center; padding: 40px;">Error loading logs.</div>');
+                });
+        },
+
+        /**
+         * Render query logs table.
+         *
+         * @param {Object} data Response data.
+         */
+        renderQueryLogs: function(data) {
+            if (!data.logs || data.logs.length === 0) {
+                $('#wcpa-query-log-table').html('<div style="text-align: center; padding: 40px;">No query logs found.</div>');
+                $('#wcpa-log-pagination').hide();
+                return;
+            }
+
+            let html = '<table class="wp-list-table widefat fixed striped wcpa-logs-table">';
+            html += '<thead><tr>';
+            html += '<th style="width: 40%;">Query</th>';
+            html += '<th style="width: 10%;">Type</th>';
+            html += '<th style="width: 10%;">Time</th>';
+            html += '<th style="width: 15%;">Request</th>';
+            html += '<th style="width: 15%;">Logged</th>';
+            html += '<th style="width: 10%;">Actions</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+
+            $.each(data.logs, function(i, log) {
+                const timeClass = WCPADashboard.getTimeClass(parseFloat(log.execution_time));
+                const query = WCPADashboard.truncateQuery(log.query, 80);
+                const time = parseFloat(log.execution_time).toFixed(3) + 's';
+                const logged = WCPADashboard.formatDate(log.logged_at);
+
+                html += '<tr>';
+                html += '<td><code>' + WCPADashboard.escapeHtml(query) + '</code></td>';
+                html += '<td><span class="wcpa-query-type">' + WCPADashboard.escapeHtml(log.query_type) + '</span></td>';
+                html += '<td><span class="wcpa-time-' + timeClass + '">' + time + '</span></td>';
+                html += '<td>' + WCPADashboard.escapeHtml(log.request_type) + '</td>';
+                html += '<td>' + logged + '</td>';
+                html += '<td><button class="button-link wcpa-view-log-detail" data-id="' + log.id + '">View</button></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            $('#wcpa-query-log-table').html(html);
+
+            // Render pagination
+            WCPADashboard.renderPagination(data);
+        },
+
+        /**
+         * Render pagination.
+         *
+         * @param {Object} data Pagination data.
+         */
+        renderPagination: function(data) {
+            if (data.total_pages <= 1) {
+                $('#wcpa-log-pagination').hide();
+                return;
+            }
+
+            let html = '<div class="tablenav"><div class="tablenav-pages">';
+            html += '<span class="displaying-num">' + data.total + ' items</span>';
+            html += '<span class="pagination-links">';
+
+            // First page
+            if (data.page > 1) {
+                html += '<a class="button wcpa-log-page" data-page="1">&laquo;</a> ';
+                html += '<a class="button wcpa-log-page" data-page="' + (data.page - 1) + '">&lsaquo;</a> ';
+            }
+
+            // Page numbers
+            html += '<span class="paging-input">';
+            html += '<span class="tablenav-paging-text">';
+            html += data.page + ' of ' + data.total_pages;
+            html += '</span>';
+            html += '</span>';
+
+            // Next/Last page
+            if (data.page < data.total_pages) {
+                html += ' <a class="button wcpa-log-page" data-page="' + (data.page + 1) + '">&rsaquo;</a>';
+                html += ' <a class="button wcpa-log-page" data-page="' + data.total_pages + '">&raquo;</a>';
+            }
+
+            html += '</span></div></div>';
+
+            $('#wcpa-log-pagination').html(html).show();
+        },
+
+        /**
+         * Handle apply filters button.
+         *
+         * @param {Event} e Click event.
+         */
+        handleApplyFilters: function(e) {
+            e.preventDefault();
+            this.loadQueryLogs(1);
+        },
+
+        /**
+         * Handle reset filters button.
+         *
+         * @param {Event} e Click event.
+         */
+        handleResetFilters: function(e) {
+            e.preventDefault();
+            $('.wcpa-filter-query-type').val('');
+            $('.wcpa-filter-request-type').val('');
+            $('.wcpa-filter-search').val('');
+            this.loadQueryLogs(1);
+        },
+
+        /**
+         * Handle pagination click.
+         *
+         * @param {Event} e Click event.
+         */
+        handleLogPagination: function(e) {
+            e.preventDefault();
+            const page = $(e.currentTarget).data('page');
+            this.loadQueryLogs(page);
+        },
+
+        /**
+         * Get time class based on execution time.
+         *
+         * @param {number} time Execution time in seconds.
+         * @return {string} CSS class.
+         */
+        getTimeClass: function(time) {
+            if (time >= 1.0) return 'critical';
+            if (time >= 0.5) return 'warning';
+            if (time >= 0.1) return 'attention';
+            return 'good';
+        },
+
+        /**
+         * Truncate query for display.
+         *
+         * @param {string} query SQL query.
+         * @param {number} length Maximum length.
+         * @return {string} Truncated query.
+         */
+        truncateQuery: function(query, length) {
+            if (query.length > length) {
+                return query.substring(0, length) + '...';
+            }
+            return query;
+        },
+
+        /**
+         * Format date for display.
+         *
+         * @param {string} date Date string.
+         * @return {string} Formatted date.
+         */
+        formatDate: function(date) {
+            const d = new Date(date);
+            return d.toLocaleString();
+        },
+
+        /**
+         * Escape HTML for safe display.
+         *
+         * @param {string} text Text to escape.
+         * @return {string} Escaped text.
+         */
+        escapeHtml: function(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         },
 
         /**
