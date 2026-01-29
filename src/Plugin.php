@@ -73,6 +73,13 @@ final class Plugin {
     private ?QueryLogViewer $query_log_viewer = null;
 
     /**
+     * WooCommerce manager instance.
+     *
+     * @var \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null
+     */
+    private ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager $woocommerce_manager = null;
+
+    /**
      * Get plugin instance.
      *
      * @return Plugin
@@ -142,12 +149,17 @@ final class Plugin {
         $this->query_logger->start();
         $this->query_log_viewer = new QueryLogViewer();
 
+        // Initialize WooCommerce manager.
+        $this->woocommerce_manager = new \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager();
+        $this->woocommerce_manager->init();
+
         // Initialize REST controller.
         $this->rest_controller = new RestController( 
             $this->scanner, 
             $this->cleanup_manager, 
             $this->query_logger,
-            $this->query_log_viewer
+            $this->query_log_viewer,
+            $this->woocommerce_manager
         );
 
         // Admin menu.
@@ -155,7 +167,8 @@ final class Plugin {
             $this->admin_menu = new AdminMenu( 
                 $this->scanner, 
                 $this->cleanup_manager,
-                $this->query_log_viewer
+                $this->query_log_viewer,
+                $this->woocommerce_manager
             );
         }
     }
@@ -249,5 +262,14 @@ final class Plugin {
      */
     public function get_scanner(): ?HealthScanner {
         return $this->scanner;
+    }
+
+    /**
+     * Get WooCommerce manager instance.
+     *
+     * @return \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null
+     */
+    public function get_woocommerce_manager(): ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager {
+        return $this->woocommerce_manager;
     }
 }

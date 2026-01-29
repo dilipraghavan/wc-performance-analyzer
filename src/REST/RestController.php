@@ -64,23 +64,33 @@ class RestController extends WP_REST_Controller {
     private QueryLogViewer $query_log_viewer;
 
     /**
+     * WooCommerce manager instance.
+     *
+     * @var \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null
+     */
+    private ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager $woocommerce_manager = null;
+
+    /**
      * Constructor.
      *
-     * @param HealthScanner  $scanner          Health scanner instance.
-     * @param CleanupManager $cleanup_manager  Cleanup manager instance.
-     * @param QueryLogger    $query_logger     Query logger instance.
-     * @param QueryLogViewer $query_log_viewer Query log viewer instance.
+     * @param HealthScanner  $scanner              Health scanner instance.
+     * @param CleanupManager $cleanup_manager      Cleanup manager instance.
+     * @param QueryLogger    $query_logger         Query logger instance.
+     * @param QueryLogViewer $query_log_viewer     Query log viewer instance.
+     * @param \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null $woocommerce_manager WooCommerce manager instance.
      */
     public function __construct( 
         HealthScanner $scanner, 
         CleanupManager $cleanup_manager, 
         QueryLogger $query_logger,
-        QueryLogViewer $query_log_viewer
+        QueryLogViewer $query_log_viewer,
+        ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager $woocommerce_manager = null
     ) {
-        $this->scanner          = $scanner;
-        $this->cleanup_manager  = $cleanup_manager;
-        $this->query_logger     = $query_logger;
-        $this->query_log_viewer = $query_log_viewer;
+        $this->scanner              = $scanner;
+        $this->cleanup_manager      = $cleanup_manager;
+        $this->query_logger         = $query_logger;
+        $this->query_log_viewer     = $query_log_viewer;
+        $this->woocommerce_manager  = $woocommerce_manager;
     }
 
     /**

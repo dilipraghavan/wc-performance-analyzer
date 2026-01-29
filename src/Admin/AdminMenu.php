@@ -47,16 +47,30 @@ class AdminMenu {
     private QueryLogViewer $query_log_viewer;
 
     /**
+     * WooCommerce manager instance.
+     *
+     * @var \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null
+     */
+    private ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager $woocommerce_manager = null;
+
+    /**
      * Constructor.
      *
-     * @param HealthScanner  $scanner          Health scanner instance.
-     * @param CleanupManager $cleanup_manager  Cleanup manager instance.
-     * @param QueryLogViewer $query_log_viewer Query log viewer instance.
+     * @param HealthScanner  $scanner              Health scanner instance.
+     * @param CleanupManager $cleanup_manager      Cleanup manager instance.
+     * @param QueryLogViewer $query_log_viewer     Query log viewer instance.
+     * @param \suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager|null $woocommerce_manager WooCommerce manager instance.
      */
-    public function __construct( HealthScanner $scanner, CleanupManager $cleanup_manager, QueryLogViewer $query_log_viewer ) {
-        $this->scanner          = $scanner;
-        $this->cleanup_manager  = $cleanup_manager;
-        $this->query_log_viewer = $query_log_viewer;
+    public function __construct( 
+        HealthScanner $scanner, 
+        CleanupManager $cleanup_manager, 
+        QueryLogViewer $query_log_viewer,
+        ?\suspended\WCPerformanceAnalyzer\WooCommerce\WooCommerceManager $woocommerce_manager = null
+    ) {
+        $this->scanner              = $scanner;
+        $this->cleanup_manager      = $cleanup_manager;
+        $this->query_log_viewer     = $query_log_viewer;
+        $this->woocommerce_manager  = $woocommerce_manager;
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
     }
 
@@ -642,37 +656,203 @@ class AdminMenu {
      */
     public function render_optimizations_page(): void {
         $this->render_page_header( __( 'WooCommerce Optimizations', 'wc-performance-analyzer' ) );
+
+        // Check if WooCommerce is active.
+        if ( ! class_exists( 'WooCommerce' ) ) {
+            ?>
+            <div class="wcpa-notice wcpa-notice-warning">
+                <p><?php esc_html_e( 'WooCommerce is not active. These optimizations require WooCommerce to be installed and activated.', 'wc-performance-analyzer' ); ?></p>
+            </div>
+            <?php
+            $this->render_page_footer();
+            return;
+        }
+
+        // Get WooCommerce stats.
+        $wc_stats = array();
+        if ( $this->woocommerce_manager ) {
+            $wc_stats = $this->woocommerce_manager->get_stats();
+        }
+
+        $settings        = get_option( 'wcpa_settings', array() );
+        $fragments_mode  = $settings['cart_fragments_mode'] ?? 'default';
         ?>
+
         <div class="wcpa-optimizations-wrapper">
-            <div class="wcpa-notice wcpa-notice-info">
-                <p><?php esc_html_e( 'Optimizations coming in Phase 7.', 'wc-performance-analyzer' ); ?></p>
+            <!-- Cart Fragments Optimization -->
+            <div class="wcpa-card">
+                <h2><?php esc_html_e( 'Cart Fragments AJAX', 'wc-performance-analyzer' ); ?></h2>
+                <p><?php esc_html_e( 'Control how WooCommerce updates cart totals via AJAX. Cart fragments can slow down every page load.', 'wc-performance-analyzer' ); ?></p>
+                
+                <table class="wcpa-stats-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Current Mode:', 'wc-performance-analyzer' ); ?></th>
+                        <td><strong><?php echo esc_html( ucfirst( $fragments_mode ) ); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Status:', 'wc-performance-analyzer' ); ?></th>
+                        <td>
+                            <?php
+                            if ( isset( $wc_stats['cart_fragments']['is_active'] ) ) {
+                                echo $wc_stats['cart_fragments']['is_active'] 
+                                    ? '<span class="wcpa-badge wcpa-badge-success">' . esc_html__( 'Active', 'wc-performance-analyzer' ) . '</span>'
+                                    : '<span class="wcpa-badge wcpa-badge-muted">' . esc_html__( 'Disabled', 'wc-performance-analyzer' ) . '</span>';
+                            }
+                            ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Description:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( $wc_stats['cart_fragments']['description'] ?? '' ); ?></td>
+                    </tr>
+                </table>
+
+                <p class="description">
+                    <?php esc_html_e( 'To change this setting, go to Settings tab and update Cart Fragments Mode.', 'wc-performance-analyzer' ); ?>
+                </p>
             </div>
 
-            <div class="wcpa-optimization-cards">
-                <!-- Cart Fragments -->
-                <div class="wcpa-optimization-card">
-                    <h3><?php esc_html_e( 'Cart Fragments AJAX', 'wc-performance-analyzer' ); ?></h3>
-                    <p><?php esc_html_e( 'Control how WooCommerce updates cart totals via AJAX.', 'wc-performance-analyzer' ); ?></p>
-                    <select disabled>
-                        <option><?php esc_html_e( 'Default (WooCommerce behavior)', 'wc-performance-analyzer' ); ?></option>
-                        <option><?php esc_html_e( 'Optimized (reduce frequency)', 'wc-performance-analyzer' ); ?></option>
-                        <option><?php esc_html_e( 'Disabled (manual refresh only)', 'wc-performance-analyzer' ); ?></option>
-                    </select>
-                </div>
+            <!-- Transients Stats -->
+            <div class="wcpa-card">
+                <h2><?php esc_html_e( 'WooCommerce Transients', 'wc-performance-analyzer' ); ?></h2>
+                <p><?php esc_html_e( 'Temporary cached data used by WooCommerce. Old transients can bloat your database.', 'wc-performance-analyzer' ); ?></p>
+                
+                <?php if ( isset( $wc_stats['transients'] ) ) : ?>
+                <table class="wcpa-stats-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Total Transients:', 'wc-performance-analyzer' ); ?></th>
+                        <td><strong><?php echo esc_html( number_format( (int) $wc_stats['transients']['total_count'] ) ); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Expired:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['transients']['expired_count'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Total Size:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( $wc_stats['transients']['size_mb'] . ' MB' ); ?></td>
+                    </tr>
+                </table>
 
-                <!-- Checkout Analysis -->
-                <div class="wcpa-optimization-card">
-                    <h3><?php esc_html_e( 'Checkout Query Analysis', 'wc-performance-analyzer' ); ?></h3>
-                    <p><?php esc_html_e( 'Analyze queries running on your checkout page.', 'wc-performance-analyzer' ); ?></p>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Analyze Checkout', 'wc-performance-analyzer' ); ?></button>
-                </div>
+                <p>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-cleanup' ) ); ?>" class="button button-secondary">
+                        <?php esc_html_e( 'Clean Transients in Cleanup Tools', 'wc-performance-analyzer' ); ?>
+                    </a>
+                </p>
+                <?php endif; ?>
+            </div>
 
-                <!-- High Variation Products -->
-                <div class="wcpa-optimization-card">
-                    <h3><?php esc_html_e( 'High-Variation Products', 'wc-performance-analyzer' ); ?></h3>
-                    <p><?php esc_html_e( 'Detect products with excessive variations that slow page loads.', 'wc-performance-analyzer' ); ?></p>
-                    <button type="button" class="button" disabled><?php esc_html_e( 'Scan Products', 'wc-performance-analyzer' ); ?></button>
+            <!-- Sessions Stats -->
+            <div class="wcpa-card">
+                <h2><?php esc_html_e( 'Customer Sessions', 'wc-performance-analyzer' ); ?></h2>
+                <p><?php esc_html_e( 'WooCommerce stores customer session data. Expired sessions should be cleaned regularly.', 'wc-performance-analyzer' ); ?></p>
+                
+                <?php if ( isset( $wc_stats['sessions'] ) ) : ?>
+                <table class="wcpa-stats-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Total Sessions:', 'wc-performance-analyzer' ); ?></th>
+                        <td><strong><?php echo esc_html( number_format( (int) $wc_stats['sessions']['total_count'] ) ); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Active:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['sessions']['active_count'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Expired:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['sessions']['expired_count'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Total Size:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( $wc_stats['sessions']['size_mb'] . ' MB' ); ?></td>
+                    </tr>
+                </table>
+
+                <p>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-cleanup' ) ); ?>" class="button button-secondary">
+                        <?php esc_html_e( 'Clean Sessions in Cleanup Tools', 'wc-performance-analyzer' ); ?>
+                    </a>
+                </p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Product Images -->
+            <div class="wcpa-card">
+                <h2><?php esc_html_e( 'Product Images', 'wc-performance-analyzer' ); ?></h2>
+                <p><?php esc_html_e( 'Large, unoptimized product images slow down your store. Quick scan of recent products:', 'wc-performance-analyzer' ); ?></p>
+                
+                <?php if ( isset( $wc_stats['images'] ) ) : ?>
+                <table class="wcpa-stats-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Total Products:', 'wc-performance-analyzer' ); ?></th>
+                        <td><strong><?php echo esc_html( number_format( (int) $wc_stats['images']['total_products'] ) ); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Scanned:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['images']['scanned'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Issues Found:', 'wc-performance-analyzer' ); ?></th>
+                        <td>
+                            <?php
+                            $issues = (int) $wc_stats['images']['issues_found'];
+                            if ( $issues > 0 ) {
+                                echo '<span class="wcpa-badge wcpa-badge-warning">' . esc_html( number_format( $issues ) ) . '</span>';
+                            } else {
+                                echo '<span class="wcpa-badge wcpa-badge-success">' . esc_html__( 'None', 'wc-performance-analyzer' ) . '</span>';
+                            }
+                            ?>
+                        </td>
+                    </tr>
+                    <?php if ( $issues > 0 ) : ?>
+                    <tr>
+                        <th><?php esc_html_e( 'Oversized Images:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['images']['oversized_count'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Large Files:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['images']['large_file_count'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Missing Alt Text:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['images']['missing_alt'] ) ); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                </table>
+
+                <?php if ( $issues > 0 ) : ?>
+                <div class="wcpa-notice wcpa-notice-warning">
+                    <p><?php esc_html_e( 'Image optimization issues detected. Consider resizing images to max 2048x2048 and compressing to under 500KB.', 'wc-performance-analyzer' ); ?></p>
                 </div>
+                <?php endif; ?>
+                <?php endif; ?>
+            </div>
+
+            <!-- Product Queries -->
+            <div class="wcpa-card">
+                <h2><?php esc_html_e( 'Product Query Performance', 'wc-performance-analyzer' ); ?></h2>
+                <p><?php esc_html_e( 'Database queries for products and their metadata. Based on Query Log data.', 'wc-performance-analyzer' ); ?></p>
+                
+                <?php if ( isset( $wc_stats['queries'] ) ) : ?>
+                <table class="wcpa-stats-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Total Products:', 'wc-performance-analyzer' ); ?></th>
+                        <td><strong><?php echo esc_html( number_format( (int) $wc_stats['queries']['total_products'] ) ); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Product Meta Entries:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (int) $wc_stats['queries']['meta_entries'] ) ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Avg Meta per Product:', 'wc-performance-analyzer' ); ?></th>
+                        <td><?php echo esc_html( number_format( (float) $wc_stats['queries']['avg_meta_per_product'], 1 ) ); ?></td>
+                    </tr>
+                </table>
+
+                <p>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=wcpa-query-log' ) ); ?>" class="button button-secondary">
+                        <?php esc_html_e( 'View Query Log for Details', 'wc-performance-analyzer' ); ?>
+                    </a>
+                </p>
+                <?php endif; ?>
             </div>
         </div>
         <?php
