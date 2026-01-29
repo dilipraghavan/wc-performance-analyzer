@@ -211,10 +211,3 @@ composer phpcs
 composer phpstan
 ```
  
-## Support
-
-For bug reports and feature requests, please use the [GitHub Issues](https://github.com/dilipbhavan/wc-performance-analyzer/issues) page.
-
-For general support and questions, visit [WP Shift Studio](https://wpshiftstudio.com).
-
- 
