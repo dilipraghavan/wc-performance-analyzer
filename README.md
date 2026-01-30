@@ -56,7 +56,7 @@ There are two methods for installation depending on whether you are an end-user 
 
 ### For End-Users (Packaged Plugin)
 
-To install a ready-to-use version of the plugin, download the latest release from the [Releases page](https://github.com/dilipbhavan/wc-performance-analyzer/releases). This version is pre-packaged with all dependencies included.
+To install a ready-to-use version of the plugin, download the latest release from the [Releases page](https://github.com/dilipraghavan/wc-performance-analyzer/releases). This version is pre-packaged with all dependencies included.
 
 1. Download the `.zip` file from the latest release.
 2. In the WordPress dashboard, go to **Plugins** > **Add New**.
