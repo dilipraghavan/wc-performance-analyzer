@@ -510,7 +510,7 @@ class RestController extends WP_REST_Controller {
         }
 
         if ( isset( $settings['cart_fragments_mode'] ) ) {
-            $valid_modes = array( 'default', 'optimized', 'disabled' );
+            $valid_modes = array( 'default', 'optimized', 'selective', 'disabled' );
             $sanitized['cart_fragments_mode'] = in_array( $settings['cart_fragments_mode'], $valid_modes, true )
                 ? $settings['cart_fragments_mode']
                 : 'default';
@@ -518,6 +518,10 @@ class RestController extends WP_REST_Controller {
 
         if ( isset( $settings['cleanup_revisions_keep'] ) ) {
             $sanitized['cleanup_revisions_keep'] = max( 0, min( 50, (int) $settings['cleanup_revisions_keep'] ) );
+        }
+
+        if ( isset( $settings['cleanup_trash_days'] ) ) {
+            $sanitized['cleanup_trash_days'] = max( 1, min( 365, (int) $settings['cleanup_trash_days'] ) );
         }
 
         if ( isset( $settings['scheduled_scan_enabled'] ) ) {

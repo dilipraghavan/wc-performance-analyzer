@@ -866,20 +866,44 @@ class AdminMenu {
      */
     public function render_settings_page(): void {
         $this->render_page_header( __( 'Settings', 'wc-performance-analyzer' ) );
+        
+        $settings = get_option( 'wcpa_settings', array() );
+        $defaults = array(
+            'query_log_enabled'       => false,
+            'query_log_threshold'     => 0.05,
+            'query_log_retention_days' => 7,
+            'cart_fragments_mode'     => 'default',
+            'cleanup_revisions_keep'  => 5,
+            'cleanup_trash_days'      => 30,
+            'scheduled_scan_enabled'  => false,
+        );
+        $settings = wp_parse_args( $settings, $defaults );
         ?>
         <div class="wcpa-settings-wrapper">
-            <div class="wcpa-notice wcpa-notice-info">
-                <p><?php esc_html_e( 'Full settings coming in Phase 8.', 'wc-performance-analyzer' ); ?></p>
-            </div>
-
-            <form method="post" action="">
+            <form id="wcpa-settings-form" class="wcpa-card">
+                <h2><?php esc_html_e( 'Performance Analyzer Settings', 'wc-performance-analyzer' ); ?></h2>
+                
+                <!-- Query Logging Settings -->
+                <h3><?php esc_html_e( 'Query Logging', 'wc-performance-analyzer' ); ?></h3>
                 <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="wcpa_query_log_enabled"><?php esc_html_e( 'Enable Query Logging', 'wc-performance-analyzer' ); ?></label>
+                        </th>
+                        <td>
+                            <label class="wcpa-toggle-switch">
+                                <input type="checkbox" id="wcpa_query_log_enabled" name="query_log_enabled" value="1" <?php checked( $settings['query_log_enabled'] ); ?>>
+                                <span class="wcpa-toggle-slider"></span>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'Enable real-time query logging. Note: This may impact performance.', 'wc-performance-analyzer' ); ?></p>
+                        </td>
+                    </tr>
                     <tr>
                         <th scope="row">
                             <label for="wcpa_query_threshold"><?php esc_html_e( 'Slow Query Threshold (seconds)', 'wc-performance-analyzer' ); ?></label>
                         </th>
                         <td>
-                            <input type="number" id="wcpa_query_threshold" step="0.01" value="0.05" disabled>
+                            <input type="number" id="wcpa_query_threshold" name="query_log_threshold" step="0.001" min="0" max="10" value="<?php echo esc_attr( $settings['query_log_threshold'] ); ?>" class="small-text">
                             <p class="description"><?php esc_html_e( 'Queries taking longer than this will be logged.', 'wc-performance-analyzer' ); ?></p>
                         </td>
                     </tr>
@@ -888,23 +912,84 @@ class AdminMenu {
                             <label for="wcpa_log_retention"><?php esc_html_e( 'Query Log Retention (days)', 'wc-performance-analyzer' ); ?></label>
                         </th>
                         <td>
-                            <input type="number" id="wcpa_log_retention" value="7" disabled>
-                            <p class="description"><?php esc_html_e( 'How long to keep query log entries.', 'wc-performance-analyzer' ); ?></p>
+                            <input type="number" id="wcpa_log_retention" name="query_log_retention_days" min="1" max="90" value="<?php echo esc_attr( $settings['query_log_retention_days'] ); ?>" class="small-text">
+                            <p class="description"><?php esc_html_e( 'How long to keep query log entries before automatic cleanup.', 'wc-performance-analyzer' ); ?></p>
                         </td>
                     </tr>
+                </table>
+
+                <hr>
+
+                <!-- Cleanup Settings -->
+                <h3><?php esc_html_e( 'Cleanup Settings', 'wc-performance-analyzer' ); ?></h3>
+                <table class="form-table">
                     <tr>
                         <th scope="row">
                             <label for="wcpa_revisions_keep"><?php esc_html_e( 'Revisions to Keep', 'wc-performance-analyzer' ); ?></label>
                         </th>
                         <td>
-                            <input type="number" id="wcpa_revisions_keep" value="5" disabled>
-                            <p class="description"><?php esc_html_e( 'Number of revisions to retain per post during cleanup.', 'wc-performance-analyzer' ); ?></p>
+                            <input type="number" id="wcpa_revisions_keep" name="cleanup_revisions_keep" min="0" max="50" value="<?php echo esc_attr( $settings['cleanup_revisions_keep'] ); ?>" class="small-text">
+                            <p class="description"><?php esc_html_e( 'Number of revisions to retain per post during cleanup. Set to 0 to remove all.', 'wc-performance-analyzer' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="wcpa_trash_days"><?php esc_html_e( 'Trash Retention (days)', 'wc-performance-analyzer' ); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" id="wcpa_trash_days" name="cleanup_trash_days" min="1" max="365" value="<?php echo esc_attr( $settings['cleanup_trash_days'] ); ?>" class="small-text">
+                            <p class="description"><?php esc_html_e( 'Permanently delete items in trash older than this many days.', 'wc-performance-analyzer' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr>
+
+                <!-- WooCommerce Settings -->
+                <h3><?php esc_html_e( 'WooCommerce Optimizations', 'wc-performance-analyzer' ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="wcpa_cart_fragments_mode"><?php esc_html_e( 'Cart Fragments Mode', 'wc-performance-analyzer' ); ?></label>
+                        </th>
+                        <td>
+                            <select id="wcpa_cart_fragments_mode" name="cart_fragments_mode">
+                                <option value="default" <?php selected( $settings['cart_fragments_mode'], 'default' ); ?>><?php esc_html_e( 'Default (No optimization)', 'wc-performance-analyzer' ); ?></option>
+                                <option value="optimized" <?php selected( $settings['cart_fragments_mode'], 'optimized' ); ?>><?php esc_html_e( 'Optimized (24h refresh)', 'wc-performance-analyzer' ); ?></option>
+                                <option value="selective" <?php selected( $settings['cart_fragments_mode'], 'selective' ); ?>><?php esc_html_e( 'Selective (Shop pages only)', 'wc-performance-analyzer' ); ?></option>
+                                <option value="disabled" <?php selected( $settings['cart_fragments_mode'], 'disabled' ); ?>><?php esc_html_e( 'Disabled (Best performance)', 'wc-performance-analyzer' ); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e( 'Control how WooCommerce updates cart totals via AJAX. "Disabled" provides best performance but cart totals only update on cart/checkout pages.', 'wc-performance-analyzer' ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr>
+
+                <!-- Scheduled Tasks -->
+                <h3><?php esc_html_e( 'Scheduled Tasks', 'wc-performance-analyzer' ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="wcpa_scheduled_scan"><?php esc_html_e( 'Daily Health Scan', 'wc-performance-analyzer' ); ?></label>
+                        </th>
+                        <td>
+                            <label class="wcpa-toggle-switch">
+                                <input type="checkbox" id="wcpa_scheduled_scan" name="scheduled_scan_enabled" value="1" <?php checked( $settings['scheduled_scan_enabled'] ); ?>>
+                                <span class="wcpa-toggle-slider"></span>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'Automatically run health scan daily to track performance trends.', 'wc-performance-analyzer' ); ?></p>
                         </td>
                     </tr>
                 </table>
 
                 <p class="submit">
-                    <button type="submit" class="button button-primary" disabled><?php esc_html_e( 'Save Settings', 'wc-performance-analyzer' ); ?></button>
+                    <button type="submit" class="button button-primary wcpa-save-settings">
+                        <?php esc_html_e( 'Save Settings', 'wc-performance-analyzer' ); ?>
+                    </button>
+                    <span class="wcpa-settings-status" style="margin-left: 10px;"></span>
                 </p>
             </form>
         </div>

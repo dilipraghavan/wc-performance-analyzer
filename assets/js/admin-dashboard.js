@@ -50,6 +50,9 @@
 
             // Query log pagination
             $(document).on('click', '.wcpa-log-page', this.handleLogPagination.bind(this));
+
+            // Settings form
+            $(document).on('submit', '#wcpa-settings-form', this.handleSaveSettings.bind(this));
         },
 
         /**
@@ -497,6 +500,64 @@
             e.preventDefault();
             const page = $(e.currentTarget).data('page');
             this.loadQueryLogs(page);
+        },
+
+        /**
+         * Handle settings form submission.
+         *
+         * @param {Event} e Submit event.
+         */
+        handleSaveSettings: function(e) {
+            e.preventDefault();
+            
+            const $form = $(e.currentTarget);
+            const $button = $form.find('.wcpa-save-settings');
+            const $status = $form.find('.wcpa-settings-status');
+            
+            // Get form data
+            const formData = {};
+            $form.find('input, select').each(function() {
+                const $input = $(this);
+                const name = $input.attr('name');
+                
+                if (!name) return;
+                
+                if ($input.attr('type') === 'checkbox') {
+                    formData[name] = $input.is(':checked');
+                } else {
+                    formData[name] = $input.val();
+                }
+            });
+            
+            // Disable button
+            $button.prop('disabled', true).text('Saving...');
+            $status.html('');
+            
+            // Save settings
+            this.apiRequest('settings', 'POST', formData)
+                .done(function(response) {
+                    if (response.success) {
+                        $status.html('<span style="color: #46b450;">✓ Settings saved successfully!</span>');
+                        
+                        // Refresh Query Logger status if query logging was toggled
+                        if ($('#wcpa-query-log-table').length) {
+                            WCPADashboard.loadQueryLogs(1);
+                        }
+                        
+                        // Clear success message after 3 seconds
+                        setTimeout(function() {
+                            $status.html('');
+                        }, 3000);
+                    } else {
+                        $status.html('<span style="color: #dc3232;">✗ Failed to save settings</span>');
+                    }
+                })
+                .fail(function() {
+                    $status.html('<span style="color: #dc3232;">✗ Error saving settings</span>');
+                })
+                .always(function() {
+                    $button.prop('disabled', false).text('Save Settings');
+                });
         },
 
         /**
