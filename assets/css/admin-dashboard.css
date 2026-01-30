@@ -1095,3 +1095,82 @@
         font-size: 14px;
     }
 }
+
+/* Query Log Detail Row */
+.wcpa-log-detail-row {
+    background-color: #f8f9fa;
+}
+
+.wcpa-log-detail-cell {
+    padding: 20px !important;
+}
+
+.wcpa-log-detail {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.wcpa-detail-section {
+    margin-bottom: 20px;
+}
+
+.wcpa-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.wcpa-detail-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3338;
+}
+
+.wcpa-query-text,
+.wcpa-stack-trace {
+    background: #f0f0f1;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.wcpa-detail-section code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+}
+
+.wcpa-detail-section ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.wcpa-detail-section li {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.wcpa-view-log-detail {
+    color: #2271b1;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: inherit;
+}
+
+.wcpa-view-log-detail:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+

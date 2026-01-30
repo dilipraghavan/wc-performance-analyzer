@@ -45,6 +45,9 @@
             $(document).on('click', '.wcpa-apply-filters', this.handleApplyFilters.bind(this));
             $(document).on('click', '.wcpa-reset-filters', this.handleResetFilters.bind(this));
 
+            // View query log details
+            $(document).on('click', '.wcpa-view-log-detail', this.handleViewLogDetail.bind(this));
+
             // Query log pagination
             $(document).on('click', '.wcpa-log-page', this.handleLogPagination.bind(this));
         },
@@ -305,6 +308,9 @@
                 return;
             }
 
+            // Cache logs for View button access
+            this.queryLogsCache = data.logs;
+
             let html = '<table class="wp-list-table widefat fixed striped wcpa-logs-table">';
             html += '<thead><tr>';
             html += '<th style="width: 40%;">Query</th>';
@@ -400,6 +406,86 @@
             $('.wcpa-filter-request-type').val('');
             $('.wcpa-filter-search').val('');
             this.loadQueryLogs(1);
+        },
+
+        /**
+         * Handle view log detail button click.
+         *
+         * @param {Event} e Click event.
+         */
+        handleViewLogDetail: function(e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const $row = $button.closest('tr');
+            const logId = $button.data('id');
+            
+            // Check if details row already exists
+            const $existingDetail = $row.next('.wcpa-log-detail-row');
+            
+            if ($existingDetail.length) {
+                // Toggle visibility
+                $existingDetail.toggle();
+                $button.text($existingDetail.is(':visible') ? 'Hide' : 'View');
+            } else {
+                // Create and insert details row
+                this.showLogDetails($row, logId, $button);
+            }
+        },
+
+        /**
+         * Show log details in an expanded row.
+         *
+         * @param {jQuery} $row Current table row.
+         * @param {number} logId Log ID.
+         * @param {jQuery} $button View button element.
+         */
+        showLogDetails: function($row, logId, $button) {
+            // Find the log data from the already loaded data
+            const logs = this.queryLogsCache || [];
+            const log = logs.find(l => l.id == logId);
+            
+            if (!log) {
+                this.showNotice('error', 'Could not find log details.');
+                return;
+            }
+            
+            // Build detail HTML
+            const detailHtml = `
+                <tr class="wcpa-log-detail-row">
+                    <td colspan="6" class="wcpa-log-detail-cell">
+                        <div class="wcpa-log-detail">
+                            <div class="wcpa-detail-section">
+                                <h4>Query:</h4>
+                                <pre class="wcpa-query-text">${this.escapeHtml(log.query)}</pre>
+                            </div>
+                            ${log.stack_trace ? `
+                            <div class="wcpa-detail-section">
+                                <h4>Stack Trace:</h4>
+                                <pre class="wcpa-stack-trace">${this.escapeHtml(log.stack_trace)}</pre>
+                            </div>
+                            ` : ''}
+                            ${log.caller ? `
+                            <div class="wcpa-detail-section">
+                                <h4>Caller:</h4>
+                                <code>${this.escapeHtml(log.caller)}</code>
+                            </div>
+                            ` : ''}
+                            <div class="wcpa-detail-section">
+                                <h4>Additional Info:</h4>
+                                <ul>
+                                    <li><strong>Request URI:</strong> ${log.request_uri || 'N/A'}</li>
+                                    <li><strong>Request Type:</strong> ${log.request_type || 'N/A'}</li>
+                                    <li><strong>User ID:</strong> ${log.user_id || '0 (Guest)'}</li>
+                                    <li><strong>Admin Request:</strong> ${log.is_admin ? 'Yes' : 'No'}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            $row.after(detailHtml);
+            $button.text('Hide');
         },
 
         /**
